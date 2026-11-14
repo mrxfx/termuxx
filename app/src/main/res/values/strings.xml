@@ -331,4 +331,146 @@
     <string name="ac_clear_history_title">Clear Saved Command History</string>
     <string name="ac_clear_history_summary">Remove offline autocomplete command history stored on this device</string>
 
+    <!-- One UI Navigation & Terminal Workspace -->
+    <string name="nav_terminal">Terminal</string>
+    <string name="nav_ai">AI</string>
+    <string name="nav_studio">Studio</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+    <string name="action_open_drawer">Open workspace drawer</string>
+    <string name="action_more_options">More options</string>
+    <string name="drawer_quick_nav_header">WORKSPACE</string>
+    <string name="terminal_sessions_header">TERMINAL SESSIONS</string>
+    <string name="terminal_session_running">Running</string>
+    <string name="terminal_session_exited">Exited</string>
+    <string name="workspace_overview_title">Workspace Overview</string>
+    <string name="workspace_overview_action">Workspace overview</string>
+    <string name="workspace_recent_commands">Recent Commands</string>
+    <string name="workspace_active_ai">Active AI Engine</string>
+    <string name="workspace_installed_tools">Detected CLI Tools</string>
+    <string name="workspace_no_recent_commands">No commands recorded in this session yet.</string>
+    <string name="workspace_no_tools_detected">Tap Refresh or run a command to index $PREFIX/bin tools.</string>
+
+    <!-- Built-in AI & Upgraded AI Assistant UI -->
+    <string name="ai_cat_builtin">Built-in AI (Zero Configuration)</string>
+    <string name="ai_builtin_model_title">Built-in Gemini Model</string>
+    <string name="ai_builtin_status_title">Built-in AI Status</string>
+    <string name="ai_builtin_status_summary">Ready out of the box via Firebase AI Logic &amp; App Check (no personal API key needed)</string>
+    <string name="ai_use_builtin_button">Use Built-in AI</string>
+    <string name="ai_switch_provider_title">Switch AI Provider &amp; Model</string>
+    <string name="ai_quick_analyze_project">Analyze Project</string>
+    <string name="ai_context_strip_format">Context shared: %1$s</string>
+    <string name="ai_context_strip_none">Context shared: None (private prompt only)</string>
+    <string name="ai_starter_fix_title">Debug Last Terminal Error</string>
+    <string name="ai_starter_fix_desc">Inspect recent output and get a safe command fix</string>
+    <string name="ai_starter_script_title">Draft a Portable Shell Script</string>
+    <string name="ai_starter_script_desc">Generate clean bash scripts with copy &amp; insert actions</string>
+    <string name="ai_starter_studio_title">Configure Zsh, Themes &amp; Prompts</string>
+    <string name="ai_starter_studio_desc">Get safe, idempotent rc snippets you review before applying</string>
+
+    <!-- Command History Screen -->
+    <string name="history_title">Command History</string>
+    <string name="history_subtitle">Offline history &amp; quick reuse</string>
+    <string name="history_search_hint">Search commands…</string>
+    <string name="history_empty_title">No Command History</string>
+    <string name="history_empty_subtitle">Commands executed in Termux appear here automatically. Secrets are filtered out.</string>
+    <string name="history_search_empty_title">No Matching Commands</string>
+    <string name="history_search_empty_subtitle">Try a different keyword or command prefix.</string>
+    <string name="history_clear_title">Clear Saved History</string>
+    <string name="history_clear_confirm">Remove all Termux AI saved command history entries? Your shell files (~/.bash_history, ~/.zsh_history) will not be deleted.</string>
+    <string name="history_today">Today</string>
+    <string name="history_yesterday">Yesterday</string>
+    <string name="history_earlier">Earlier</string>
+    <string name="history_copied">Command copied to clipboard</string>
+    <string name="history_reused">Inserted into terminal input (press Enter to run)</string>
+    <string name="history_deleted">Entry hidden from Termux AI history</string>
+    <string name="history_action_copy">Copy</string>
+    <string name="history_action_reuse">Reuse</string>
+    <string name="history_action_delete">Delete</string>
+
+    <!-- Terminal Studio (Termux-OS Integration) -->
+    <string name="studio_title">Terminal Studio</string>
+    <string name="studio_subtitle">Shell customization &amp; visual themes</string>
+    <string name="studio_section_shells">Shell Manager</string>
+    <string name="studio_section_themes">Terminal Color Themes</string>
+    <string name="studio_section_shell_themes">Shell Prompt Themes</string>
+    <string name="studio_section_syntax">Syntax Highlighting</string>
+    <string name="studio_section_autosuggestions">Shell Autosuggestions</string>
+    <string name="studio_section_extrakeys">Extra Keys &amp; Appearance</string>
+    <string name="studio_section_banner">Username &amp; Startup Banner</string>
+    <string name="studio_section_security">Optional Shell Lock (Security Review)</string>
+    <string name="studio_section_ai">AI Configuration Assistant</string>
+    <string name="studio_section_attribution">Open Source &amp; Attribution</string>
+    <string name="studio_attribution_summary">Inspired by h4ck3r0/Termux-os (GPL-3.0 License). Native Java/Android implementation using safe, idempotent configuration blocks and automatic file backups.</string>
+    <string name="studio_restore_backups">Restore Previous Config</string>
+    <string name="studio_apply_theme">Apply Theme</string>
+    <string name="studio_theme_applied">Color theme applied to ~/.termux/colors.properties</string>
+    <string name="studio_shell_switched">Default login shell updated in ~/.termux/shell</string>
+    <string name="studio_extrakeys_saved">Extra keys layout updated in ~/.termux/termux.properties</string>
+    <string name="studio_banner_saved">Startup banner updated safely</string>
+    <string name="studio_lock_warning">Security Notice: A shell prompt lock is NOT an Android device lock screen. It can be bypassed via Failsafe sessions, external file access, or non-interactive shells, and is disabled by default.</string>
+    <string name="studio_ask_ai_explain">Ask AI About Configs</string>
+    <string name="studio_ask_ai_propose">Propose Safe RC Snippet with AI</string>
+    <string name="studio_open_licenses">View GPL-3.0 &amp; Open Source Attribution</string>
+
+    <!-- Storage & Maintenance Settings -->
+    <string name="storage_preferences_title">Storage &amp; Maintenance</string>
+    <string name="storage_preferences_summary">Inspect disk usage, studio backups, and clear app caches</string>
+    <string name="storage_cat_usage">Real Disk Usage</string>
+    <string name="storage_cat_actions">Maintenance &amp; Cleanup</string>
+    <string name="storage_calculating">Calculating…</string>
+    <string name="storage_home_title">Home Directory (~)</string>
+    <string name="storage_prefix_title">System Prefix ($PREFIX)</string>
+    <string name="storage_ai_history_title">AI Chat History Store</string>
+    <string name="storage_ac_history_title">Autocomplete History Store</string>
+    <string name="storage_backups_title">Terminal Studio Config Backups</string>
+    <string name="storage_clear_caches_title">Clear Temporary App Caches</string>
+    <string name="storage_clear_caches_summary">Remove cached HTTP/app temporary files without touching your $HOME files</string>
+    <string name="storage_backup_guide_title">Export &amp; Backup Guide</string>
+    <string name="storage_backup_guide_summary">Safe tar backup command for Termux $HOME and ~/.termux configs</string>
+    <string name="open_source_licenses_title">Open Source &amp; Termux-OS Attribution</string>
+    <string name="open_source_licenses_summary">Termux (GPLv3), Termux-OS inspiration by h4ck3r0 (GPL-3.0), Markwon (Apache-2.0)</string>
+
+    <!-- Termux AI V2: Workspaces, Profiles, Snippets & Backups -->
+    <string name="nav_workspaces">Workspaces</string>
+    <string name="workspaces_title">Workspaces</string>
+    <string name="workspaces_subtitle">Manage directories, shells, profiles &amp; snippets</string>
+    <string name="workspace_editor_title_new">Create Workspace</string>
+    <string name="workspace_editor_title_edit">Edit Workspace</string>
+    <string name="workspace_restore_previous">Restore Workspace Settings</string>
+    <string name="profiles_title">Profile Manager</string>
+    <string name="profiles_subtitle">Reusable shell, theme, font, cursor &amp; key profiles</string>
+    <string name="snippets_title">Command Snippets</string>
+    <string name="snippets_subtitle">User-controlled commands · Never auto-executed</string>
+    <string name="backups_title">Backup &amp; Restore</string>
+    <string name="backups_subtitle">Validated config archives · Zero plaintext secrets</string>
+    <string name="restore_preview_title">Restore Preview</string>
+    <string name="restore_preview_subtitle">Verify archive contents before applying changes</string>
+
+    <string name="title_workspace_manager">Workspaces</string>
+    <string name="subtitle_workspace_manager">Manage directories, shells, profiles &amp; snippets</string>
+    <string name="title_workspace_editor">Create Workspace</string>
+    <string name="subtitle_workspace_editor">Configure directory, shell, theme &amp; profile</string>
+    <string name="title_profile_manager">Profile Manager</string>
+    <string name="subtitle_profile_manager">Reusable shell, theme, font, cursor &amp; key profiles</string>
+    <string name="title_snippet_manager">Command Snippets</string>
+    <string name="subtitle_snippet_manager">User-controlled commands · Never auto-executed</string>
+    <string name="title_backup_manager">Backup &amp; Restore</string>
+    <string name="subtitle_backup_manager">Validated config archives · Zero plaintext secrets</string>
+    <string name="title_restore_preview">Restore Preview</string>
+    <string name="subtitle_restore_preview">Verify archive contents before applying changes</string>
+
+    <string name="action_new_workspace">+ Workspace</string>
+    <string name="action_restore_workspace_settings">Restore Previous Settings</string>
+    <string name="action_validate_directory">Validate Path</string>
+    <string name="action_new_profile">+ Profile</string>
+    <string name="action_apply_profile">Apply</string>
+    <string name="action_new_snippet">+ Snippet</string>
+    <string name="action_create_backup">+ Backup</string>
+    <string name="action_confirm_restore">Restore Selected Components</string>
+    <string name="action_cancel">Cancel</string>
+
+    <string name="title_environment_manager">Environment &amp; Error Fix</string>
+    <string name="subtitle_environment_manager">Runtimes, project dependencies, error diagnosis &amp; safe repair</string>
+
 </resources>

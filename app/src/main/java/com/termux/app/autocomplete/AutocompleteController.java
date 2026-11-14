@@ -16,6 +16,8 @@ import com.termux.R;
 import com.termux.app.TermuxActivity;
 import com.termux.app.ai.TerminalCommandBridge;
 import com.termux.shared.shell.ShellUtils;
+import com.termux.shared.termux.extrakeys.ExtraKeysView;
+import com.termux.shared.termux.extrakeys.SpecialButton;
 import com.termux.terminal.TerminalEmulator;
 import com.termux.terminal.TerminalSession;
 import com.termux.view.TerminalView;
@@ -88,8 +90,22 @@ public class AutocompleteController implements TerminalView.TerminalObserver {
     @Override
     public void onSessionAttached(TerminalSession session) {
         TerminalCommandBridge.attachSession(session);
-        TerminalCommandBridge.updateAvailableTools(mEngine.getAvailableKnownToolsSnapshot());
         dismissSuggestions(false);
+    }
+
+    public void onResume() {
+        if (!mSettings.isEnabled()) {
+            dismissSuggestions(false);
+        } else {
+            evaluateSuggestions();
+        }
+    }
+
+    public void destroy() {
+        mEngine.shutdown();
+        mCurrentSuggestions = Collections.emptyList();
+        mActiveGhostSuffix = null;
+        mTerminalView.setGhostText(null);
     }
 
     @Override
@@ -152,7 +168,14 @@ public class AutocompleteController implements TerminalView.TerminalObserver {
             return false;
         }
 
-        boolean noModifiers = !event.isCtrlPressed() && !event.isAltPressed();
+        boolean virtualAlt = false;
+        ExtraKeysView extraKeysView = mActivity.getExtraKeysView();
+        if ((keyCode == KeyEvent.KEYCODE_DPAD_DOWN || keyCode == KeyEvent.KEYCODE_DPAD_UP) && extraKeysView != null) {
+            Boolean altActive = extraKeysView.readSpecialButton(SpecialButton.ALT, false);
+            virtualAlt = Boolean.TRUE.equals(altActive);
+        }
+        boolean altPressed = event.isAltPressed() || virtualAlt;
+        boolean noModifiers = !event.isCtrlPressed() && !altPressed;
 
         if (keyCode == KeyEvent.KEYCODE_ESCAPE && noModifiers) {
             dismissSuggestions(true);
@@ -168,7 +191,7 @@ public class AutocompleteController implements TerminalView.TerminalObserver {
             return acceptActiveSuggestion();
         }
 
-        if ((keyCode == KeyEvent.KEYCODE_DPAD_DOWN && event.isAltPressed())
+        if ((keyCode == KeyEvent.KEYCODE_DPAD_DOWN && altPressed && !event.isCtrlPressed())
             || (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && noModifiers && mSelectedIndex >= 0)) {
             if (!mCurrentSuggestions.isEmpty()) {
                 mSelectedIndex = Math.min(mCurrentSuggestions.size() - 1, mSelectedIndex + 1);
@@ -177,7 +200,7 @@ public class AutocompleteController implements TerminalView.TerminalObserver {
             }
         }
 
-        if ((keyCode == KeyEvent.KEYCODE_DPAD_UP && event.isAltPressed())
+        if ((keyCode == KeyEvent.KEYCODE_DPAD_UP && altPressed && !event.isCtrlPressed())
             || (keyCode == KeyEvent.KEYCODE_DPAD_UP && noModifiers && mSelectedIndex >= 0)) {
             if (!mCurrentSuggestions.isEmpty()) {
                 mSelectedIndex = mSelectedIndex - 1; // -1 disengages dropdown selection cleanly
@@ -313,9 +336,8 @@ public class AutocompleteController implements TerminalView.TerminalObserver {
         TerminalEmulator emulator = mTerminalView.mEmulator;
         if (session == null || emulator == null) return;
         if (TerminalInputAnalyzer.isInteractiveMode(emulator, session.getPid())) return;
-        TerminalInputAnalyzer.ParsedInput parsed = TerminalInputAnalyzer.analyzeEmulatorCursorLine(emulator);
-        if (parsed != null && !parsed.commandLine.trim().isEmpty()) {
-            String cmd = parsed.commandLine.trim();
+        String cmd = TerminalInputAnalyzer.extractFullCommandLine(emulator);
+        if (cmd != null && !cmd.isEmpty()) {
             mEngine.recordSubmittedCommand(cmd);
             TerminalCommandBridge.updateLastCommand(cmd);
         }
@@ -354,8 +376,13 @@ public class AutocompleteController implements TerminalView.TerminalObserver {
             holder.badge.setText(item.getType().getBadge());
             holder.text.setText(item.getDisplayText());
             holder.desc.setText(item.getDescription());
-            holder.itemView.setBackgroundColor(position == mSelected ? 0x3358A6FF : 0x00000000);
-            holder.itemView.setOnClickListener(v -> mOnClick.onClick(holder.getAdapterPosition()));
+            holder.itemView.setBackgroundColor(position == mSelected ? 0xFF262626 : 0x00000000);
+            holder.itemView.setOnClickListener(v -> {
+                int adapterPos = holder.getAdapterPosition();
+                if (adapterPos != RecyclerView.NO_POSITION) {
+                    mOnClick.onClick(adapterPos);
+                }
+            });
         }
 
         @Override

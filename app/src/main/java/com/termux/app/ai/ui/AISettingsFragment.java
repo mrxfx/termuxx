@@ -22,6 +22,7 @@ import com.termux.app.ai.AISettingsManager;
 import com.termux.app.ai.model.AIException;
 import com.termux.app.ai.model.AIModelInfo;
 import com.termux.app.ai.model.AIProviderType;
+import com.termux.app.ai.network.UrlConnectionHttpTransport;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -44,6 +45,7 @@ public class AISettingsFragment extends PreferenceFragmentCompat {
         setPreferencesFromResource(R.xml.ai_preferences, rootKey);
 
         bindProviderSelector();
+        bindBuiltInProvider();
         bindProviderConfig(AIProviderType.GEMINI,
             "ai_gemini_api_key", "ai_gemini_model", "ai_gemini_custom_model",
             "ai_gemini_test_connection", "ai_gemini_fetch_models");
@@ -64,14 +66,30 @@ public class AISettingsFragment extends PreferenceFragmentCompat {
         ListPreference providerPref = findPreference(AISettingsManager.KEY_ACTIVE_PROVIDER);
         if (providerPref == null) return;
         providerPref.setEntries(new CharSequence[]{
+            AIProviderType.BUILTIN.getDisplayName(),
             AIProviderType.GEMINI.getDisplayName(),
             AIProviderType.OPENROUTER.getDisplayName()
         });
         providerPref.setEntryValues(new CharSequence[]{
+            AIProviderType.BUILTIN.getId(),
             AIProviderType.GEMINI.getId(),
             AIProviderType.OPENROUTER.getId()
         });
         providerPref.setValue(mAiManager.getSettings().getActiveProvider().getId());
+    }
+
+    private void bindBuiltInProvider() {
+        ListPreference modelPref = findPreference(AISettingsManager.KEY_BUILTIN_MODEL);
+        if (modelPref != null) {
+            populateModelEntries(modelPref, AIProviderType.BUILTIN);
+        }
+        Preference testPref = findPreference("ai_builtin_test_connection");
+        if (testPref != null) {
+            testPref.setOnPreferenceClickListener(p -> {
+                runTestConnection(AIProviderType.BUILTIN, testPref);
+                return true;
+            });
+        }
     }
 
     private void bindProviderConfig(
@@ -274,7 +292,12 @@ public class AISettingsFragment extends PreferenceFragmentCompat {
             .setMessage("Optional custom HTTPS proxy endpoint. Leave empty to call the official provider directly.")
             .setView(input)
             .setPositiveButton("Save", (d, w) -> {
-                mAiManager.getSettings().setCustomProxyUrl(input.getText().toString().trim());
+                String proxy = input.getText().toString().trim();
+                if (!proxy.isEmpty() && !UrlConnectionHttpTransport.isValidEndpointUrl(proxy)) {
+                    Toast.makeText(context, "Invalid proxy URL: use HTTPS (or local loopback for testing).", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                mAiManager.getSettings().setCustomProxyUrl(proxy);
                 refreshProxySummary(proxyPref);
             })
             .setNeutralButton("Clear", (d, w) -> {
@@ -342,6 +365,9 @@ public class AISettingsFragment extends PreferenceFragmentCompat {
                 case AISettingsManager.KEY_ACTIVE_PROVIDER:
                     mSettings.setActiveProvider(AIProviderType.fromId(value));
                     break;
+                case AISettingsManager.KEY_BUILTIN_MODEL:
+                    mSettings.setModelForProvider(AIProviderType.BUILTIN, value);
+                    break;
                 case AISettingsManager.KEY_GEMINI_MODEL:
                     mSettings.setModelForProvider(AIProviderType.GEMINI, value);
                     break;
@@ -369,6 +395,8 @@ public class AISettingsFragment extends PreferenceFragmentCompat {
             switch (key) {
                 case AISettingsManager.KEY_ACTIVE_PROVIDER:
                     return mSettings.getActiveProvider().getId();
+                case AISettingsManager.KEY_BUILTIN_MODEL:
+                    return mSettings.getModelForProvider(AIProviderType.BUILTIN);
                 case AISettingsManager.KEY_GEMINI_MODEL:
                     return mSettings.getModelForProvider(AIProviderType.GEMINI);
                 case AISettingsManager.KEY_OPENROUTER_MODEL:

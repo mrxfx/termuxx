@@ -2,6 +2,9 @@ package com.termux.app.autocomplete;
 
 import android.content.Context;
 
+import com.termux.terminal.TerminalEmulator;
+import com.termux.terminal.TerminalOutput;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -226,5 +229,95 @@ public class AutocompleteEngineTest {
         List<SuggestionItem> npmSuggestions = engine.computeSuggestionsSync(npmRun, mWorkDir.getAbsolutePath());
         assertEquals("test", npmSuggestions.get(0).getDisplayText());
         assertEquals(SuggestionType.CONTEXT_NODE, npmSuggestions.get(0).getType());
+    }
+
+    @Test
+    public void testInteractiveReplAndAltBufferSuppression() {
+        // Python, IPython, Node.js, GDB, SQLite REPL prompts must NOT trigger shell autocomplete
+        assertNull(TerminalInputAnalyzer.parsePromptLine(">>> impo", true));
+        assertNull(TerminalInputAnalyzer.parsePromptLine("... retu", true));
+        assertNull(TerminalInputAnalyzer.parsePromptLine("In [1]: impo", true));
+        assertNull(TerminalInputAnalyzer.parsePromptLine("> cons", true));
+        assertNull(TerminalInputAnalyzer.parsePromptLine("(gdb) br", true));
+        assertNull(TerminalInputAnalyzer.parsePromptLine("sqlite> SEL", true));
+
+        // Standard Bash/Zsh/Starship/Oh-My-Zsh prompts continue to work normally
+        assertNotNull(TerminalInputAnalyzer.parsePromptLine("~/proj $ pyt", true));
+        assertNotNull(TerminalInputAnalyzer.parsePromptLine("user@android:~% git st", true));
+        assertNotNull(TerminalInputAnalyzer.parsePromptLine("❯ ls -la | gr", true));
+        assertNotNull(TerminalInputAnalyzer.parsePromptLine("➜  ~ git st", true));
+
+        // Emulator alternate screen & interactive app titles suppress autocomplete
+        TerminalEmulator emulator = new TerminalEmulator(new TerminalOutput() {
+            @Override public void write(byte[] data, int offset, int count) {}
+            @Override public void titleChanged(String oldTitle, String newTitle) {}
+            @Override public void onCopyTextToClipboard(String text) {}
+            @Override public void onPasteTextFromClipboard() {}
+            @Override public void onBell() {}
+            @Override public void onColorsChanged() {}
+        }, 80, 24, 10, 20, 100, null);
+
+        byte[] normalPrompt = "~/app $ git sta".getBytes();
+        emulator.append(normalPrompt, normalPrompt.length);
+        assertFalse(TerminalInputAnalyzer.isInteractiveMode(emulator, 0));
+
+        // Simulate cursor moved backward mid-line before Enter: full command line still captured
+        emulator.append(new byte[]{0x1B, '[', 'D', 0x1B, '[', 'D', 0x1B, '[', 'D'}, 9);
+        TerminalInputAnalyzer.ParsedInput midLine = TerminalInputAnalyzer.analyzeEmulatorCursorLine(emulator);
+        assertNotNull(midLine);
+        assertFalse(midLine.atEndOfLine);
+        assertEquals("git sta", TerminalInputAnalyzer.extractFullCommandLine(emulator));
+
+        // Simulate entering alternate screen buffer (vim / nano / less / htop / tmux)
+        byte[] enterAlt = "\u001B[?1049h".getBytes();
+        emulator.append(enterAlt, enterAlt.length);
+        assertTrue(TerminalInputAnalyzer.isInteractiveMode(emulator, 0));
+
+        byte[] exitAlt = "\u001B[?1049l".getBytes();
+        emulator.append(exitAlt, exitAlt.length);
+        assertFalse(TerminalInputAnalyzer.isInteractiveMode(emulator, 0));
+
+        // Simulate interactive process title (e.g., ssh / python3 / node / vim)
+        for (String title : Arrays.asList("vim main.py", "nano", "less log.txt", "htop", "ssh prod", "tmux", "python3", "node")) {
+            byte[] oscTitle = ("\u001B]0;" + title + "\u0007").getBytes();
+            emulator.append(oscTitle, oscTitle.length);
+            assertTrue("Expected interactive mode for title: " + title, TerminalInputAnalyzer.isInteractiveMode(emulator, 0));
+        }
+    }
+
+    @Test
+    public void testCrossInstanceHistoryClearAndEvaluationLatency() throws Exception {
+        File storeFile = new File(tempFolder.getRoot(), "shared_hist.json");
+        CommandHistoryStore liveStore = new CommandHistoryStore(storeFile, Collections.emptyList());
+        liveStore.recordCommand("git status --short");
+        assertEquals(1, liveStore.size());
+
+        // Clearing via separate instance (e.g., AutocompleteSettingsFragment) must clear liveStore too
+        CommandHistoryStore settingsStore = new CommandHistoryStore(storeFile, Collections.emptyList());
+        settingsStore.clearHistory();
+        assertEquals(0, liveStore.size());
+        assertTrue(liveStore.matchPrefix("git", 5).isEmpty());
+
+        // Offline latency sanity check: 200 evaluations should complete well under 1000ms total
+        AutocompleteSettingsManager settings = new AutocompleteSettingsManager(mContext);
+        settings.setEnabled(true);
+        AutocompleteEngine engine = new AutocompleteEngine(
+            settings,
+            new CommandIndexCache(Collections.singletonList(mBinDir.getAbsolutePath())),
+            liveStore,
+            new FileAndDirectorySuggester(mWorkDir.getAbsolutePath()),
+            new InstalledPackageSuggester(new File(tempFolder.getRoot(), "missing_dpkg")),
+            new ContextAwareSuggester()
+        );
+        TerminalInputAnalyzer.ParsedInput parsed = TerminalInputAnalyzer.parsePromptLine("$ git che", true);
+        assertNotNull(parsed);
+        long startNs = System.nanoTime();
+        for (int i = 0; i < 200; i++) {
+            List<SuggestionItem> res = engine.computeSuggestionsSync(parsed, mWorkDir.getAbsolutePath());
+            assertFalse(res.isEmpty());
+        }
+        long elapsedMs = (System.nanoTime() - startNs) / 1_000_000L;
+        assertTrue("200 offline evaluations took too long: " + elapsedMs + " ms", elapsedMs < 1500L);
+        engine.shutdown();
     }
 }

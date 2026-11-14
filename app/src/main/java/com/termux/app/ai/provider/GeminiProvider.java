@@ -14,6 +14,7 @@ import com.termux.app.ai.model.AIStreamCallback;
 import com.termux.app.ai.model.AIUsage;
 import com.termux.app.ai.model.CancellationSignalHandle;
 import com.termux.app.ai.network.HttpTransport;
+import com.termux.app.ai.security.SensitiveDataRedactor;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -267,7 +268,7 @@ public class GeminiProvider implements AIProvider {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < parts.length(); i++) {
             JSONObject part = parts.optJSONObject(i);
-            if (part != null && part.has("text")) {
+            if (part != null && !part.optBoolean("thought", false) && part.has("text")) {
                 sb.append(part.optString("text", ""));
             }
         }
@@ -309,7 +310,7 @@ public class GeminiProvider implements AIProvider {
                 message = body;
             }
         }
-        return AIError.fromHttpStatus(statusCode, message, AIProviderType.GEMINI);
+        return AIError.fromHttpStatus(statusCode, SensitiveDataRedactor.redact(message), AIProviderType.GEMINI);
     }
 
     private AIError mapIoException(IOException e, @Nullable CancellationSignalHandle cancelHandle) {
@@ -322,7 +323,7 @@ public class GeminiProvider implements AIProvider {
         if (e instanceof UnknownHostException) {
             return new AIError(AIError.Type.NO_INTERNET, 0, "No internet connection or cannot reach Gemini API.", AIProviderType.GEMINI, true);
         }
-        String msg = e.getMessage() != null ? e.getMessage() : "Network error";
+        String msg = e.getMessage() != null ? SensitiveDataRedactor.redact(e.getMessage()) : "Network error";
         if (msg.toLowerCase().contains("cancel")) {
             return new AIError(AIError.Type.CANCELLED, 0, "Generation stopped by user.", AIProviderType.GEMINI, false);
         }

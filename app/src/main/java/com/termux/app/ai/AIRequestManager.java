@@ -63,14 +63,14 @@ public class AIRequestManager {
                 callback.onError(firstError);
                 return;
             }
-            // Never silently switch providers unless user explicitly enabled fallback AND secondary key exists.
+            // Never silently switch providers unless user explicitly enabled fallback AND secondary is ready.
             if (allowExplicitFallback
                 && fallbackType != null
                 && fallbackType != primaryType
-                && fallbackApiKey != null && !fallbackApiKey.trim().isEmpty()
+                && (!fallbackType.requiresApiKey() || (fallbackApiKey != null && !fallbackApiKey.trim().isEmpty()))
                 && fallbackRequest != null
                 && isFallbackEligible(firstError)) {
-                AIError fallbackError = runWithRetry(fallbackType, fallbackApiKey, fallbackRequest, callback, cancelHandle);
+                AIError fallbackError = runWithRetry(fallbackType, fallbackApiKey == null ? "" : fallbackApiKey, fallbackRequest, callback, cancelHandle);
                 if (fallbackError != null) {
                     callback.onError(fallbackError);
                 }

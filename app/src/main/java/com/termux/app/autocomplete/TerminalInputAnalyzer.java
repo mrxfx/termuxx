@@ -58,15 +58,22 @@ public final class TerminalInputAnalyzer {
         }
     }
 
-    // Matches common shell prompts: "~/dir $ ", "user@host:/path# ", "$ ", "# ", "% ", "> ", "❯ "
+    // Matches common shell prompts: "~/dir $ ", "user@host:/path# ", "$ ", "# ", "% ", "❯ ", "➜  ~ "
     private static final Pattern PROMPT_PATTERN = Pattern.compile(
-        "^(?:.*?[\\$#%>❯]\\s+)"
+        "^(?:.*?[\\$#%>❯➜]\\s+)"
+    );
+
+    // Interactive REPL prompts that must NOT trigger shell autocomplete or bash history capture
+    private static final Pattern INTERACTIVE_REPL_PROMPT_PATTERN = Pattern.compile(
+        "^(?:>>>\\s*|\\.\\.\\.\\s+|In\\s*\\[\\d+\\]:\\s*|\\s+\\.\\.\\.:\\s*|>\\s+|\\((?:gdb|lldb)\\)\\s*|sqlite>\\s*|irb\\([^)]*\\)[^>]*>\\s*).*"
     );
 
     private static final Set<String> INTERACTIVE_TITLES = new HashSet<>(Arrays.asList(
         "vim", "nvim", "vi", "nano", "emacs", "pico", "less", "more", "man",
         "top", "htop", "btop", "ssh", "sftp", "ftp", "tmux", "screen", "fzf",
-        "gdb", "lldb", "tig", "mc", "ranger", "nnn", "irssi", "mutt", "weechat"
+        "gdb", "lldb", "tig", "mc", "ranger", "nnn", "irssi", "mutt", "weechat",
+        "python", "python3", "python2", "ipython", "node", "nodejs", "irb",
+        "sqlite3", "psql", "mysql", "bc", "telnet", "mosh"
     ));
 
     private TerminalInputAnalyzer() {}
@@ -79,9 +86,15 @@ public final class TerminalInputAnalyzer {
         String title = emulator.getTitle();
         if (title != null) {
             String lowerTitle = title.trim().toLowerCase();
-            String firstWord = lowerTitle.split("\\s+")[0];
-            if (INTERACTIVE_TITLES.contains(firstWord)) {
-                return true;
+            if (!lowerTitle.isEmpty()) {
+                String firstWord = lowerTitle.split("\\s+")[0];
+                int slash = firstWord.lastIndexOf('/');
+                if (slash >= 0) firstWord = firstWord.substring(slash + 1);
+                int colon = firstWord.indexOf(':');
+                if (colon > 0) firstWord = firstWord.substring(0, colon);
+                if (INTERACTIVE_TITLES.contains(firstWord)) {
+                    return true;
+                }
             }
         }
         if (shellPid > 0 && hasInteractiveForegroundChild(shellPid)) {
@@ -111,6 +124,30 @@ public final class TerminalInputAnalyzer {
 
         boolean atEndOfLine = afterCursor.trim().isEmpty();
         return parsePromptLine(beforeCursor, atEndOfLine);
+    }
+
+    /**
+     * Extracts the complete command after the prompt on the active cursor row,
+     * even if the cursor was moved mid-line before hitting Enter.
+     */
+    @Nullable
+    public static String extractFullCommandLine(@Nullable TerminalEmulator emulator) {
+        if (emulator == null) return null;
+        TerminalBuffer screen = emulator.getScreen();
+        if (screen == null) return null;
+        int cursorRow = emulator.getCursorRow();
+        if (cursorRow < 0 || cursorRow >= emulator.mRows) return null;
+
+        int internalRow = screen.externalToInternalRow(cursorRow);
+        TerminalRow rowObj = screen.allocateFullLineIfNecessary(internalRow);
+        if (rowObj == null || rowObj.mText == null) return null;
+
+        int used = Math.min(rowObj.getSpaceUsed(), rowObj.mText.length);
+        String fullRow = new String(rowObj.mText, 0, used).replaceFirst("\\s+$", "");
+        String afterPrompt = extractCommandAfterPrompt(fullRow);
+        if (afterPrompt == null) return null;
+        String trimmed = afterPrompt.trim();
+        return (trimmed.isEmpty() || trimmed.startsWith("#")) ? null : trimmed;
     }
 
     @Nullable
@@ -186,11 +223,14 @@ public final class TerminalInputAnalyzer {
     @Nullable
     public static String extractCommandAfterPrompt(@NonNull String line) {
         if (line.trim().isEmpty()) return null;
+        if (INTERACTIVE_REPL_PROMPT_PATTERN.matcher(line).matches()) {
+            return null;
+        }
         Matcher m = PROMPT_PATTERN.matcher(line);
         if (m.find()) {
             return line.substring(m.end());
         }
-        // Fallback: if no classic prompt delimiter, check if line starts directly without prompt
+        // Fallback: if no classic prompt delimiter, check if line starts directly with $ / # prompt
         if (line.startsWith("$ ") || line.startsWith("# ")) {
             return line.substring(2);
         }
@@ -199,23 +239,47 @@ public final class TerminalInputAnalyzer {
 
     private static boolean hasInteractiveForegroundChild(int shellPid) {
         File statFile = new File("/proc/" + shellPid + "/stat");
-        if (!statFile.exists() || !statFile.canRead()) return false;
-        try (BufferedReader br = new BufferedReader(new FileReader(statFile))) {
-            String statLine = br.readLine();
-            if (statLine == null) return false;
-            int rparen = statLine.lastIndexOf(')');
-            if (rparen < 0 || rparen + 2 >= statLine.length()) return false;
-            String[] fields = statLine.substring(rparen + 2).trim().split("\\s+");
-            // After comm: state(0), ppid(1), pgrp(2), session(3), tty_nr(4), tpgid(5)
-            if (fields.length > 5) {
-                int pgrp = Integer.parseInt(fields[2]);
-                int tpgid = Integer.parseInt(fields[5]);
-                if (tpgid > 0 && pgrp > 0 && tpgid != pgrp) {
-                    return true;
+        if (statFile.exists() && statFile.canRead()) {
+            try (BufferedReader br = new BufferedReader(new FileReader(statFile))) {
+                String statLine = br.readLine();
+                if (statLine != null) {
+                    int rparen = statLine.lastIndexOf(')');
+                    if (rparen >= 0 && rparen + 2 < statLine.length()) {
+                        String[] fields = statLine.substring(rparen + 2).trim().split("\\s+");
+                        // After comm: state(0), ppid(1), pgrp(2), session(3), tty_nr(4), tpgid(5)
+                        if (fields.length > 5) {
+                            int pgrp = Integer.parseInt(fields[2]);
+                            int tpgid = Integer.parseInt(fields[5]);
+                            if (tpgid > 0 && pgrp > 0 && tpgid != pgrp) {
+                                return true;
+                            }
+                        }
+                    }
                 }
-            }
-        } catch (Exception ignored) {
-            return false;
+            } catch (Exception ignored) {}
+        }
+
+        // Secondary check: inspect direct task children comms for interactive tools/REPLs
+        File taskDir = new File("/proc/" + shellPid + "/task");
+        File[] tids = taskDir.listFiles();
+        if (tids == null) return false;
+        for (File tidDir : tids) {
+            File childrenFile = new File(tidDir, "children");
+            if (!childrenFile.canRead()) continue;
+            try (BufferedReader br = new BufferedReader(new FileReader(childrenFile))) {
+                String line = br.readLine();
+                if (line == null || line.trim().isEmpty()) continue;
+                for (String childPid : line.trim().split("\\s+")) {
+                    File commFile = new File("/proc/" + childPid + "/comm");
+                    if (!commFile.canRead()) continue;
+                    try (BufferedReader cbr = new BufferedReader(new FileReader(commFile))) {
+                        String comm = cbr.readLine();
+                        if (comm != null && INTERACTIVE_TITLES.contains(comm.trim().toLowerCase())) {
+                            return true;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
         }
         return false;
     }

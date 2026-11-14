@@ -19,6 +19,8 @@ import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Persists AI Assistant chat history privately in app storage with automatic redaction.
@@ -29,6 +31,7 @@ public class AIConversationStore {
     private static final int MAX_STORED_MESSAGES = 100;
 
     private final File mStoreFile;
+    private final ExecutorService mIoExecutor = Executors.newSingleThreadExecutor();
 
     public AIConversationStore(@NonNull Context context) {
         mStoreFile = new File(context.getApplicationContext().getFilesDir(), FILE_NAME);
@@ -76,7 +79,10 @@ public class AIConversationStore {
     }
 
     public synchronized void saveMessages(@NonNull List<AIMessage> messages) {
+        File tmpFile = null;
         try {
+            File parent = mStoreFile.getParentFile();
+            if (parent != null && !parent.exists()) parent.mkdirs();
             JSONArray array = new JSONArray();
             int start = Math.max(0, messages.size() - MAX_STORED_MESSAGES);
             for (int i = start; i < messages.size(); i++) {
@@ -89,7 +95,7 @@ public class AIConversationStore {
                 obj.put("timestamp", msg.getTimestampMs());
                 if (msg.getProvider() != null) obj.put("provider", msg.getProvider().getId());
                 if (msg.getModelId() != null) obj.put("modelId", msg.getModelId());
-                if (msg.getErrorMessage() != null) obj.put("error", msg.getErrorMessage());
+                if (msg.getErrorMessage() != null) obj.put("error", SensitiveDataRedactor.redact(msg.getErrorMessage()));
                 if (msg.getUsage() != null) {
                     obj.put("promptTokens", msg.getUsage().getPromptTokens());
                     obj.put("completionTokens", msg.getUsage().getCompletionTokens());
@@ -97,10 +103,38 @@ public class AIConversationStore {
                 }
                 array.put(obj);
             }
-            try (FileOutputStream fos = new FileOutputStream(mStoreFile)) {
+            tmpFile = new File(mStoreFile.getParentFile(), mStoreFile.getName() + ".tmp");
+            try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
                 fos.write(array.toString().getBytes(StandardCharsets.UTF_8));
+                fos.flush();
+                try {
+                    fos.getFD().sync();
+                } catch (Exception ignored) {}
             }
-        } catch (Exception ignored) {}
+            if (!tmpFile.renameTo(mStoreFile)) {
+                if (mStoreFile.exists()) {
+                    //noinspection ResultOfMethodCallIgnored
+                    mStoreFile.delete();
+                }
+                if (!tmpFile.renameTo(mStoreFile)) {
+                    try (FileOutputStream fos = new FileOutputStream(mStoreFile)) {
+                        fos.write(array.toString().getBytes(StandardCharsets.UTF_8));
+                        fos.flush();
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        } finally {
+            if (tmpFile != null && tmpFile.exists()) {
+                //noinspection ResultOfMethodCallIgnored
+                tmpFile.delete();
+            }
+        }
+    }
+
+    public void saveMessagesAsync(@NonNull List<AIMessage> messages) {
+        final List<AIMessage> snapshot = new ArrayList<>(messages);
+        mIoExecutor.execute(() -> saveMessages(snapshot));
     }
 
     public synchronized void clearHistory() {
@@ -108,5 +142,9 @@ public class AIConversationStore {
             //noinspection ResultOfMethodCallIgnored
             mStoreFile.delete();
         }
+    }
+
+    public void clearHistoryAsync() {
+        mIoExecutor.execute(this::clearHistory);
     }
 }

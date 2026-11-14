@@ -7,6 +7,8 @@ import android.os.Looper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.termux.app.ai.TerminalCommandBridge;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -70,23 +72,27 @@ public class AutocompleteEngine {
     }
 
     public void warmUpCachesAsync() {
+        if (mBgExecutor.isShutdown()) return;
         mBgExecutor.execute(() -> {
             mCommandIndex.getIndex();
+            TerminalCommandBridge.updateAvailableTools(mCommandIndex.getAvailableKnownTools());
             mPackageSuggester.getInstalledPackages();
             mHistoryStore.refreshShellHistoryFiles();
         });
     }
 
     public void recordSubmittedCommand(@Nullable String command) {
-        if (command == null || command.trim().isEmpty()) return;
+        if (command == null || command.trim().isEmpty() || mBgExecutor.isShutdown()) return;
         mBgExecutor.execute(() -> mHistoryStore.recordCommand(command));
     }
 
     public void clearHistory() {
+        if (mBgExecutor.isShutdown()) return;
         mBgExecutor.execute(mHistoryStore::clearHistory);
     }
 
     public void invalidateCommandCache() {
+        if (mBgExecutor.isShutdown()) return;
         mBgExecutor.execute(mCommandIndex::invalidate);
     }
 
@@ -105,31 +111,34 @@ public class AutocompleteEngine {
             mMainHandler.removeCallbacks(mPendingTask);
         }
 
-        if (!mSettings.isEnabled() || parsedInput == null || !parsedInput.atEndOfLine || parsedInput.commandLine.trim().isEmpty()) {
+        if (!mSettings.isEnabled() || mBgExecutor.isShutdown() || parsedInput == null || !parsedInput.atEndOfLine || parsedInput.commandLine.trim().isEmpty()) {
             callback.onSuggestionsReady(Collections.emptyList(), null);
             return;
         }
 
-        mPendingTask = () -> mBgExecutor.execute(() -> {
-            if (mGeneration.get() != gen) return;
-            List<SuggestionItem> suggestions = computeSuggestionsSync(parsedInput, cwd);
-            if (mGeneration.get() != gen) return;
+        mPendingTask = () -> {
+            if (mBgExecutor.isShutdown()) return;
+            mBgExecutor.execute(() -> {
+                if (mGeneration.get() != gen) return;
+                List<SuggestionItem> suggestions = computeSuggestionsSync(parsedInput, cwd);
+                if (mGeneration.get() != gen) return;
 
-            String ghost = null;
-            if (mSettings.isGhostTextEnabled() && !suggestions.isEmpty()) {
-                SuggestionItem top = suggestions.get(0);
-                if (!top.getInsertSuffix().isEmpty()) {
-                    ghost = top.getInsertSuffix();
+                String ghost = null;
+                if (mSettings.isGhostTextEnabled() && !suggestions.isEmpty()) {
+                    SuggestionItem top = suggestions.get(0);
+                    if (!top.getInsertSuffix().isEmpty()) {
+                        ghost = top.getInsertSuffix();
+                    }
                 }
-            }
-            List<SuggestionItem> dropdown = mSettings.isDropdownEnabled() ? suggestions : Collections.emptyList();
-            String finalGhost = ghost;
-            mMainHandler.post(() -> {
-                if (mGeneration.get() == gen) {
-                    callback.onSuggestionsReady(dropdown, finalGhost);
-                }
+                List<SuggestionItem> dropdown = mSettings.isDropdownEnabled() ? suggestions : Collections.emptyList();
+                String finalGhost = ghost;
+                mMainHandler.post(() -> {
+                    if (mGeneration.get() == gen) {
+                        callback.onSuggestionsReady(dropdown, finalGhost);
+                    }
+                });
             });
-        });
+        };
 
         mMainHandler.postDelayed(mPendingTask, DEBOUNCE_DELAY_MS);
     }
@@ -140,6 +149,11 @@ public class AutocompleteEngine {
             mMainHandler.removeCallbacks(mPendingTask);
             mPendingTask = null;
         }
+    }
+
+    public void shutdown() {
+        cancelPending();
+        mBgExecutor.shutdown();
     }
 
     @NonNull

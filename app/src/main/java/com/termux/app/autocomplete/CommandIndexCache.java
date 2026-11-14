@@ -88,10 +88,13 @@ public class CommandIndexCache {
         KNOWN_DESCRIPTIONS.put("termux-reload-settings", "Reload Termux properties and style");
     }
 
+    private static final long STAT_COOLDOWN_MS = 3000L;
+
     private final List<String> mCustomPathDirs;
     private String mCachedPathKey = "";
     private final Map<String, Long> mDirTimestamps = new LinkedHashMap<>();
     private Map<String, CommandEntry> mIndexedCommands = Collections.emptyMap();
+    private long mLastStatCheckMs = 0L;
 
     public CommandIndexCache() {
         this(null);
@@ -105,14 +108,22 @@ public class CommandIndexCache {
     public synchronized Map<String, CommandEntry> getIndex() {
         List<String> dirs = resolvePathDirs();
         String pathKey = String.join(File.pathSeparator, dirs);
-        if (!pathKey.equals(mCachedPathKey) || hasAnyDirectoryChanged(dirs)) {
+        long now = System.currentTimeMillis();
+        if (mCachedPathKey.isEmpty() || !pathKey.equals(mCachedPathKey)) {
             rebuildIndex(dirs, pathKey);
+            mLastStatCheckMs = now;
+        } else if (now - mLastStatCheckMs >= STAT_COOLDOWN_MS) {
+            mLastStatCheckMs = now;
+            if (hasAnyDirectoryChanged(dirs)) {
+                rebuildIndex(dirs, pathKey);
+            }
         }
         return mIndexedCommands;
     }
 
     public synchronized void invalidate() {
         mCachedPathKey = "";
+        mLastStatCheckMs = 0L;
         mDirTimestamps.clear();
     }
 

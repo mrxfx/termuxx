@@ -322,4 +322,72 @@ public class AIProvidersTest {
         assertEquals(AIProviderType.OPENROUTER, fallbackResp.get().getProvider());
         assertEquals(1, openRouterCalls.get());
     }
+
+    @Test
+    public void testRemoteCleartextHttpBlockedErrorRedactedAndThoughtFiltered() throws Exception {
+        UrlConnectionHttpTransport transport = new UrlConnectionHttpTransport();
+        assertFalse(UrlConnectionHttpTransport.isValidEndpointUrl("http://proxy.example.com/v1"));
+        assertTrue(UrlConnectionHttpTransport.isValidEndpointUrl("https://proxy.example.com/v1"));
+        assertTrue(UrlConnectionHttpTransport.isValidEndpointUrl("http://127.0.0.1:8080/v1"));
+
+        // Verify cleartext remote request is blocked before network send
+        GeminiProvider remoteCleartextProvider = new GeminiProvider(transport, "http://remote-untrusted.example.com/v1beta");
+        AtomicReference<AIError> cleartextErr = new AtomicReference<>();
+        remoteCleartextProvider.sendMessage(
+            new AIRequest(Collections.singletonList(new AIMessage(AIMessage.Role.USER, "hi")), "", "gemini-2.5-flash", 0.2f, 64, false, null),
+            "AIzaSyDummyKey1234567890",
+            new AIStreamCallback() {
+                @Override public void onChunk(String delta, String accumulated) {}
+                @Override public void onComplete(AIResponse response) { fail("Cleartext remote HTTP must fail"); }
+                @Override public void onError(AIError error) { cleartextErr.set(error); }
+            },
+            null
+        );
+        assertNotNull(cleartextErr.get());
+        assertTrue(cleartextErr.get().getMessage().contains("HTTPS"));
+
+        // Verify 401 error redacts echoed secrets and thought parts are filtered out
+        mRoutes.put("/v1beta/models/gemini-2.5-flash:generateContent", (method, path, headers, body, out) -> {
+            String keyEcho = headers.get("x-goog-api-key");
+            writeResponse(out, 401, "application/json", "{\"error\":{\"message\":\"Invalid key " + keyEcho + "\"}}");
+        });
+        GeminiProvider localProvider = new GeminiProvider(transport, mBaseUrl + "/v1beta");
+        AtomicReference<AIError> authErr = new AtomicReference<>();
+        localProvider.sendMessage(
+            new AIRequest(Collections.singletonList(new AIMessage(AIMessage.Role.USER, "hi")), "", "gemini-2.5-flash", 0.2f, 64, false, null),
+            "AIzaSyEchoedSecretKeyValue1234567890",
+            new AIStreamCallback() {
+                @Override public void onChunk(String delta, String accumulated) {}
+                @Override public void onComplete(AIResponse response) { fail("Expected 401"); }
+                @Override public void onError(AIError error) { authErr.set(error); }
+            },
+            null
+        );
+        assertNotNull(authErr.get());
+        assertEquals(AIError.Type.INVALID_API_KEY, authErr.get().getType());
+        assertFalse("Echoed API key must be redacted from error message",
+            authErr.get().getMessage().contains("AIzaSyEchoedSecretKeyValue"));
+
+        // Cancellation test: pre-cancelled handle aborts immediately without calling network
+        CancellationSignalHandle cancelled = new CancellationSignalHandle();
+        cancelled.cancel();
+        AtomicReference<AIError> cancelErr = new AtomicReference<>();
+        localProvider.sendMessage(
+            new AIRequest(Collections.singletonList(new AIMessage(AIMessage.Role.USER, "hi")), "", "gemini-2.5-flash", 0.2f, 64, true, null),
+            "AIzaSyTest1234567890",
+            new AIStreamCallback() {
+                @Override public void onChunk(String delta, String accumulated) {}
+                @Override public void onComplete(AIResponse response) { fail("Expected cancelled"); }
+                @Override public void onError(AIError error) { cancelErr.set(error); }
+            },
+            cancelled
+        );
+        assertEquals(AIError.Type.CANCELLED, cancelErr.get().getType());
+
+        // Gemini thought parts must be excluded from visible output
+        org.json.JSONObject withThought = new org.json.JSONObject(
+            "{\"candidates\":[{\"content\":{\"parts\":[{\"thought\":true,\"text\":\"internal reasoning\"},{\"text\":\"pwd\"}]}}]}"
+        );
+        assertEquals("pwd", GeminiProvider.extractTextFromResponse(withThought));
+    }
 }

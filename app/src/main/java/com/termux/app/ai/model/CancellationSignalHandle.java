@@ -1,5 +1,7 @@
 package com.termux.app.ai.model;
 
+import android.os.Looper;
+
 import androidx.annotation.Nullable;
 
 import java.net.HttpURLConnection;
@@ -19,9 +21,7 @@ public final class CancellationSignalHandle {
     public void setActiveConnection(@Nullable HttpURLConnection connection) {
         mActiveConnection.set(connection);
         if (mCancelled.get() && connection != null) {
-            try {
-                connection.disconnect();
-            } catch (Exception ignored) {}
+            disconnectOffMainThread(connection);
         }
     }
 
@@ -36,9 +36,7 @@ public final class CancellationSignalHandle {
         if (mCancelled.compareAndSet(false, true)) {
             HttpURLConnection conn = mActiveConnection.getAndSet(null);
             if (conn != null) {
-                try {
-                    conn.disconnect();
-                } catch (Exception ignored) {}
+                disconnectOffMainThread(conn);
             }
             Runnable hook = mOnCancelHook.getAndSet(null);
             if (hook != null) {
@@ -46,6 +44,22 @@ public final class CancellationSignalHandle {
                     hook.run();
                 } catch (Exception ignored) {}
             }
+        }
+    }
+
+    private static void disconnectOffMainThread(HttpURLConnection conn) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            Thread t = new Thread(() -> {
+                try {
+                    conn.disconnect();
+                } catch (Exception ignored) {}
+            }, "termux-ai-cancel");
+            t.setDaemon(true);
+            t.start();
+        } else {
+            try {
+                conn.disconnect();
+            } catch (Exception ignored) {}
         }
     }
 }

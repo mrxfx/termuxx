@@ -201,27 +201,49 @@ public final class TerminalRenderer {
             && cursorRowHeightOffset > 0
             && cursorRow >= topRow && cursorRow < endRow
             && cursorCol >= 0 && cursorCol < columns) {
-            drawGhostTextOverlay(canvas, palette, cursorRowHeightOffset, cursorCol, columns, ghostText);
+            drawGhostTextOverlay(canvas, palette, cursorRowHeightOffset, cursorCol, columns,
+                cursorShape, mEmulator.shouldCursorBeVisible(), reverseVideo, ghostText);
         }
     }
 
-    private void drawGhostTextOverlay(Canvas canvas, int[] palette, float y, int cursorCol, int totalColumns, String ghostText) {
+    private void drawGhostTextOverlay(Canvas canvas, int[] palette, float y, int cursorCol, int totalColumns,
+                                      int cursorShape, boolean cursorVisible, boolean reverseVideo, String ghostText) {
         int availableCols = totalColumns - cursorCol;
         if (availableCols <= 0) return;
-        String clipped = ghostText.length() > availableCols ? ghostText.substring(0, availableCols) : ghostText;
-        if (clipped.isEmpty()) return;
 
-        int foreColor = palette[TextStyle.COLOR_INDEX_FOREGROUND];
+        String sanitized = ghostText.replaceAll("[\\r\\n\\u0000-\\u001F\\u007F]", "");
+        if (sanitized.isEmpty()) return;
+        String clipped = sanitized.length() > availableCols ? sanitized.substring(0, availableCols) : sanitized;
+
+        int foreColor = palette[reverseVideo ? TextStyle.COLOR_INDEX_BACKGROUND : TextStyle.COLOR_INDEX_FOREGROUND];
+        int backColor = palette[reverseVideo ? TextStyle.COLOR_INDEX_FOREGROUND : TextStyle.COLOR_INDEX_BACKGROUND];
         int ghostColor = (foreColor & 0x00FFFFFF) | 0x73000000; // ~45% alpha foreground for clear visual distinction
 
         mTextPaint.setFakeBoldText(false);
         mTextPaint.setUnderlineText(false);
         mTextPaint.setTextSkewX(-0.12f);
         mTextPaint.setStrikeThruText(false);
-        mTextPaint.setColor(ghostColor);
 
         float startX = cursorCol * mFontWidth;
-        canvas.drawText(clipped, startX, y - mFontLineSpacingAndAscent, mTextPaint);
+        float baselineY = y - mFontLineSpacingAndAscent;
+        canvas.save();
+        canvas.clipRect(startX, baselineY + mFontAscent, totalColumns * mFontWidth, y);
+
+        boolean blockCursorActive = cursorVisible && cursorShape == TerminalEmulator.TERMINAL_CURSOR_STYLE_BLOCK;
+        if (blockCursorActive && clipped.length() >= 1) {
+            int invertedGhost = (backColor & 0x00FFFFFF) | 0xC8000000;
+            mTextPaint.setColor(invertedGhost);
+            canvas.drawText(clipped.substring(0, 1), startX, baselineY, mTextPaint);
+            if (clipped.length() > 1) {
+                mTextPaint.setColor(ghostColor);
+                canvas.drawText(clipped.substring(1), startX + mFontWidth, baselineY, mTextPaint);
+            }
+        } else {
+            mTextPaint.setColor(ghostColor);
+            canvas.drawText(clipped, startX, baselineY, mTextPaint);
+        }
+
+        canvas.restore();
         mTextPaint.setTextSkewX(0.f);
     }
 

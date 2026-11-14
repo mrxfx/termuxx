@@ -1,61 +1,144 @@
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <Preference
-        app:key="termux"
-        app:title="@string/termux_preferences_title"
-        app:summary="@string/termux_preferences_summary"
-        app:fragment="com.termux.app.fragments.settings.TermuxPreferencesFragment"/>
+    <PreferenceCategory
+        app:key="cat_workspace"
+        app:title="Workspace &amp; Terminal">
 
-    <Preference
-        app:key="ai_assistant"
-        app:title="@string/ai_preferences_title"
-        app:summary="@string/ai_preferences_summary"
-        app:fragment="com.termux.app.ai.ui.AISettingsFragment"/>
+        <Preference
+            app:key="termux"
+            app:title="@string/termux_preferences_title"
+            app:summary="@string/termux_preferences_summary"
+            app:fragment="com.termux.app.fragments.settings.TermuxPreferencesFragment" />
 
-    <Preference
-        app:key="autocomplete"
-        app:title="@string/autocomplete_preferences_title"
-        app:summary="@string/autocomplete_preferences_summary"
-        app:fragment="com.termux.app.autocomplete.AutocompleteSettingsFragment"/>
+        <Preference
+            app:key="environment_manager_shortcut"
+            app:title="@string/title_environment_manager"
+            app:summary="@string/subtitle_environment_manager"
+            app:persistent="false" />
 
-    <Preference
-        app:key="termux_api"
-        app:title="@string/termux_api_preferences_title"
-        app:summary="@string/termux_api_preferences_summary"
-        app:isPreferenceVisible="false"
-        app:fragment="com.termux.app.fragments.settings.TermuxAPIPreferencesFragment"/>
+        <Preference
+            app:key="workspace_manager_shortcut"
+            app:title="@string/title_workspace_manager"
+            app:summary="@string/subtitle_workspace_manager"
+            app:persistent="false" />
 
-    <Preference
-        app:key="termux_float"
-        app:title="@string/termux_float_preferences_title"
-        app:summary="@string/termux_float_preferences_summary"
-        app:isPreferenceVisible="false"
-        app:fragment="com.termux.app.fragments.settings.TermuxFloatPreferencesFragment"/>
+        <Preference
+            app:key="profile_manager_shortcut"
+            app:title="@string/title_profile_manager"
+            app:summary="@string/subtitle_profile_manager"
+            app:persistent="false" />
 
-    <Preference
-        app:key="termux_tasker"
-        app:title="@string/termux_tasker_preferences_title"
-        app:summary="@string/termux_tasker_preferences_summary"
-        app:isPreferenceVisible="false"
-        app:fragment="com.termux.app.fragments.settings.TermuxTaskerPreferencesFragment"/>
+        <Preference
+            app:key="snippet_manager_shortcut"
+            app:title="@string/title_snippet_manager"
+            app:summary="@string/subtitle_snippet_manager"
+            app:persistent="false" />
 
-    <Preference
-        app:key="termux_widget"
-        app:title="@string/termux_widget_preferences_title"
-        app:summary="@string/termux_widget_preferences_summary"
-        app:isPreferenceVisible="false"
-        app:fragment="com.termux.app.fragments.settings.TermuxWidgetPreferencesFragment"/>
+        <Preference
+            app:key="backup_manager_shortcut"
+            app:title="@string/title_backup_manager"
+            app:summary="@string/subtitle_backup_manager"
+            app:persistent="false" />
 
-    <Preference
-        app:key="about"
-        app:title="@string/about_preference_title"
-        app:persistent="false"/>
-    <!-- app:layout="@layout/preference_markdown_text" -->
+        <Preference
+            app:key="terminal_studio_shortcut"
+            app:title="@string/studio_title"
+            app:summary="@string/studio_subtitle"
+            app:persistent="false" />
 
-    <Preference
-        app:key="donate"
-        app:title="@string/donate_preference_title"
-        app:persistent="false"
-        app:isPreferenceVisible="false"/>
+        <Preference
+            app:key="command_history_shortcut"
+            app:title="@string/history_title"
+            app:summary="@string/history_subtitle"
+            app:persistent="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="cat_intelligence"
+        app:title="AI &amp; Smart Autocomplete">
+
+        <Preference
+            app:key="ai_assistant"
+            app:title="@string/ai_preferences_title"
+            app:summary="@string/ai_preferences_summary"
+            app:fragment="com.termux.app.ai.ui.AISettingsFragment" />
+
+        <Preference
+            app:key="autocomplete"
+            app:title="@string/autocomplete_preferences_title"
+            app:summary="@string/autocomplete_preferences_summary"
+            app:fragment="com.termux.app.autocomplete.AutocompleteSettingsFragment" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="cat_device_storage"
+        app:title="Storage &amp; Maintenance">
+
+        <Preference
+            app:key="storage_maintenance"
+            app:title="@string/storage_preferences_title"
+            app:summary="@string/storage_preferences_summary"
+            app:fragment="com.termux.app.fragments.settings.StorageMaintenanceFragment" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="cat_plugins"
+        app:title="Plugins">
+
+        <Preference
+            app:key="termux_api"
+            app:title="@string/termux_api_preferences_title"
+            app:summary="@string/termux_api_preferences_summary"
+            app:isPreferenceVisible="false"
+            app:fragment="com.termux.app.fragments.settings.TermuxAPIPreferencesFragment" />
+
+        <Preference
+            app:key="termux_float"
+            app:title="@string/termux_float_preferences_title"
+            app:summary="@string/termux_float_preferences_summary"
+            app:isPreferenceVisible="false"
+            app:fragment="com.termux.app.fragments.settings.TermuxFloatPreferencesFragment" />
+
+        <Preference
+            app:key="termux_tasker"
+            app:title="@string/termux_tasker_preferences_title"
+            app:summary="@string/termux_tasker_preferences_summary"
+            app:isPreferenceVisible="false"
+            app:fragment="com.termux.app.fragments.settings.TermuxTaskerPreferencesFragment" />
+
+        <Preference
+            app:key="termux_widget"
+            app:title="@string/termux_widget_preferences_title"
+            app:summary="@string/termux_widget_preferences_summary"
+            app:isPreferenceVisible="false"
+            app:fragment="com.termux.app.fragments.settings.TermuxWidgetPreferencesFragment" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="cat_about"
+        app:title="About &amp; Licenses">
+
+        <Preference
+            app:key="open_source_licenses"
+            app:title="@string/open_source_licenses_title"
+            app:summary="@string/open_source_licenses_summary"
+            app:persistent="false" />
+
+        <Preference
+            app:key="about"
+            app:title="@string/about_preference_title"
+            app:persistent="false" />
+
+        <Preference
+            app:key="donate"
+            app:title="@string/donate_preference_title"
+            app:persistent="false"
+            app:isPreferenceVisible="false" />
+
+    </PreferenceCategory>
 
 </PreferenceScreen>

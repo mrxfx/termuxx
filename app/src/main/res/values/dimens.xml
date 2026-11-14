@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- One UI Spacing Scale -->
+    <dimen name="oneui_space_xs">4dp</dimen>
+    <dimen name="oneui_space_sm">8dp</dimen>
+    <dimen name="oneui_space_md">12dp</dimen>
+    <dimen name="oneui_space_lg">16dp</dimen>
+    <dimen name="oneui_space_xl">20dp</dimen>
+    <dimen name="oneui_space_2xl">24dp</dimen>
+
+    <!-- One UI Corner Radii -->
+    <dimen name="oneui_radius_sm">10dp</dimen>
+    <dimen name="oneui_radius_md">16dp</dimen>
+    <dimen name="oneui_radius_lg">20dp</dimen>
+    <dimen name="oneui_radius_xl">26dp</dimen>
+
+    <!-- Typography Scale -->
+    <dimen name="oneui_text_display">26sp</dimen>
+    <dimen name="oneui_text_title_lg">20sp</dimen>
+    <dimen name="oneui_text_title">17sp</dimen>
+    <dimen name="oneui_text_body">15sp</dimen>
+    <dimen name="oneui_text_body_sm">13sp</dimen>
+    <dimen name="oneui_text_caption">11sp</dimen>
+
+    <!-- Minimum Touch Target & Component Heights -->
+    <dimen name="oneui_touch_min">48dp</dimen>
+    <dimen name="oneui_topbar_height">54dp</dimen>
+    <dimen name="oneui_bottom_nav_height">64dp</dimen>
+    <dimen name="oneui_icon_sm">18dp</dimen>
+    <dimen name="oneui_icon_md">22dp</dimen>
+    <dimen name="oneui_icon_lg">24dp</dimen>
+    <dimen name="oneui_card_elevation">0dp</dimen>
+</resources>

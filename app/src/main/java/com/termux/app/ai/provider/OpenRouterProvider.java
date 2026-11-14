@@ -14,6 +14,7 @@ import com.termux.app.ai.model.AIStreamCallback;
 import com.termux.app.ai.model.AIUsage;
 import com.termux.app.ai.model.CancellationSignalHandle;
 import com.termux.app.ai.network.HttpTransport;
+import com.termux.app.ai.security.SensitiveDataRedactor;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -313,7 +314,7 @@ public class OpenRouterProvider implements AIProvider {
                 message = body;
             }
         }
-        return AIError.fromHttpStatus(statusCode, message, AIProviderType.OPENROUTER);
+        return AIError.fromHttpStatus(statusCode, SensitiveDataRedactor.redact(message), AIProviderType.OPENROUTER);
     }
 
     private AIError mapIoException(IOException e, @Nullable CancellationSignalHandle cancelHandle) {
@@ -326,7 +327,7 @@ public class OpenRouterProvider implements AIProvider {
         if (e instanceof UnknownHostException) {
             return new AIError(AIError.Type.NO_INTERNET, 0, "No internet connection or cannot reach OpenRouter.", AIProviderType.OPENROUTER, true);
         }
-        String msg = e.getMessage() != null ? e.getMessage() : "Network error";
+        String msg = e.getMessage() != null ? SensitiveDataRedactor.redact(e.getMessage()) : "Network error";
         if (msg.toLowerCase().contains("cancel")) {
             return new AIError(AIError.Type.CANCELLED, 0, "Generation stopped by user.", AIProviderType.OPENROUTER, false);
         }

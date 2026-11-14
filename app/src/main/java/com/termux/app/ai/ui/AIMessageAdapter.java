@@ -26,6 +26,10 @@ public class AIMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         void onCopyCode(@NonNull String code);
         void onInsertCode(@NonNull String code);
         void onExplainCode(@NonNull String code);
+        default void onReviewAndInsertCode(@NonNull String code) {
+            onInsertCode(code);
+        }
+        default void onSaveCodeAsSnippet(@NonNull String code) {}
         void onRegenerate();
         void onRetry();
     }
@@ -104,7 +108,7 @@ public class AIMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         if (segments.isEmpty() && msg.isStreaming()) {
             TextView thinking = new TextView(holder.itemView.getContext());
             thinking.setText(R.string.ai_thinking);
-            thinking.setTextColor(0xFF8B949E);
+            thinking.setTextColor(0xFFA3A3A3);
             thinking.setTextSize(13f);
             holder.segmentsContainer.addView(thinking);
         } else {
@@ -114,21 +118,29 @@ public class AIMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     TextView langView = card.findViewById(R.id.ai_code_language);
                     TextView bodyView = card.findViewById(R.id.ai_code_body);
                     TextView copyBtn = card.findViewById(R.id.ai_code_copy_button);
+                    TextView reviewBtn = card.findViewById(R.id.ai_code_review_insert_button);
                     TextView insertBtn = card.findViewById(R.id.ai_code_insert_button);
                     TextView explainBtn = card.findViewById(R.id.ai_code_explain_button);
+                    TextView saveSnippetBtn = card.findViewById(R.id.ai_code_save_snippet_button);
 
                     langView.setText(segment.language);
                     bodyView.setText(BashSyntaxHighlighter.highlight(segment.content));
                     copyBtn.setOnClickListener(v -> mListener.onCopyCode(segment.content));
+                    if (reviewBtn != null) {
+                        reviewBtn.setOnClickListener(v -> mListener.onReviewAndInsertCode(segment.content));
+                    }
                     insertBtn.setOnClickListener(v -> mListener.onInsertCode(segment.content));
                     explainBtn.setOnClickListener(v -> mListener.onExplainCode(segment.content));
+                    if (saveSnippetBtn != null) {
+                        saveSnippetBtn.setOnClickListener(v -> mListener.onSaveCodeAsSnippet(segment.content));
+                    }
 
                     holder.segmentsContainer.addView(card);
                 } else {
                     TextView proseView = new TextView(holder.itemView.getContext());
-                    proseView.setTextColor(0xFFE6EDF3);
+                    proseView.setTextColor(0xFFFFFFFF);
                     proseView.setTextSize(14f);
-                    proseView.setLineSpacing(4f, 1.1f);
+                    proseView.setLineSpacing(4f, 1.15f);
                     proseView.setTextIsSelectable(true);
                     mMarkwon.setMarkdown(proseView, segment.content);
                     holder.segmentsContainer.addView(proseView);
@@ -143,11 +155,16 @@ public class AIMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             holder.errorView.setVisibility(View.GONE);
         }
 
-        if (isLast && !msg.isStreaming()) {
+        if (!msg.isStreaming() && (!msg.getContent().trim().isEmpty() || isLast)) {
             holder.actionsRow.setVisibility(View.VISIBLE);
             boolean hasErr = msg.getErrorMessage() != null && !msg.getErrorMessage().isEmpty();
-            holder.retryButton.setVisibility(hasErr ? View.VISIBLE : View.GONE);
-            holder.regenerateButton.setVisibility(hasErr ? View.GONE : View.VISIBLE);
+            boolean hasText = !msg.getContent().trim().isEmpty();
+            if (holder.copyAllButton != null) {
+                holder.copyAllButton.setVisibility(hasText ? View.VISIBLE : View.GONE);
+                holder.copyAllButton.setOnClickListener(v -> mListener.onCopyCode(msg.getContent()));
+            }
+            holder.retryButton.setVisibility(isLast && hasErr ? View.VISIBLE : View.GONE);
+            holder.regenerateButton.setVisibility(isLast && !hasErr ? View.VISIBLE : View.GONE);
             holder.retryButton.setOnClickListener(v -> mListener.onRetry());
             holder.regenerateButton.setOnClickListener(v -> mListener.onRegenerate());
         } else {
@@ -170,6 +187,7 @@ public class AIMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         final LinearLayout segmentsContainer;
         final TextView errorView;
         final View actionsRow;
+        final TextView copyAllButton;
         final TextView retryButton;
         final TextView regenerateButton;
 
@@ -180,6 +198,7 @@ public class AIMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             segmentsContainer = itemView.findViewById(R.id.ai_assistant_segments_container);
             errorView = itemView.findViewById(R.id.ai_assistant_error_text);
             actionsRow = itemView.findViewById(R.id.ai_assistant_actions_row);
+            copyAllButton = itemView.findViewById(R.id.ai_action_copy_all_button);
             retryButton = itemView.findViewById(R.id.ai_action_retry_button);
             regenerateButton = itemView.findViewById(R.id.ai_action_regenerate_button);
         }

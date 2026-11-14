@@ -10,6 +10,7 @@ import com.termux.app.ai.ui.AIAssistantActivity;
 import com.termux.app.ai.ui.AISettingsFragment;
 import com.termux.app.ai.ui.MarkdownCodeBlockParser;
 import com.termux.app.autocomplete.AutocompleteSettingsFragment;
+import com.termux.app.autocomplete.MaxHeightRecyclerView;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,6 +43,14 @@ public class BridgeAndUITest {
         String consumed = TerminalCommandBridge.consumePendingInsertCommand();
         assertEquals("pkg update", consumed);
         assertNull(TerminalCommandBridge.consumePendingInsertCommand());
+
+        // Unicode line breaks & control characters (ESC, Ctrl+C) must also be stripped
+        String injected = "echo ok\u2028rm -rf /\u0085\u0003\u001B[A";
+        String safe = TerminalCommandBridge.sanitizeCommandForInsert(injected);
+        assertFalse(safe.contains("\u2028"));
+        assertFalse(safe.contains("\u0085"));
+        assertFalse(safe.contains("\u0003"));
+        assertFalse(safe.contains("\u001B"));
     }
 
     @Test
@@ -94,5 +103,89 @@ public class BridgeAndUITest {
             SettingsActivity activity = controller.create().start().resume().get();
             assertTrue(activity.getSupportFragmentManager().findFragmentById(R.id.settings) instanceof AutocompleteSettingsFragment);
         }
+    }
+
+    @Test
+    public void testMaxHeightRecyclerViewBoundsDropdownHeight() {
+        MaxHeightRecyclerView rv = new MaxHeightRecyclerView(RuntimeEnvironment.getApplication());
+        int widthSpec = View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY);
+        int hugeHeightSpec = View.MeasureSpec.makeMeasureSpec(1200, View.MeasureSpec.EXACTLY);
+        rv.measure(widthSpec, hugeHeightSpec);
+        int maxExpectedPx = Math.round(168f * RuntimeEnvironment.getApplication().getResources().getDisplayMetrics().density) + 2;
+        assertTrue("MaxHeightRecyclerView measured height exceeded cap: " + rv.getMeasuredHeight(),
+            rv.getMeasuredHeight() <= maxExpectedPx);
+    }
+
+    @Test
+    public void testAIConversationStoreAtomicPersistenceAndReload() {
+        AIConversationStore store = new AIConversationStore(RuntimeEnvironment.getApplication());
+        store.clearHistory();
+
+        com.termux.app.ai.model.AIMessage userMsg =
+            new com.termux.app.ai.model.AIMessage(com.termux.app.ai.model.AIMessage.Role.USER, "Check disk usage");
+        com.termux.app.ai.model.AIMessage assistantMsg =
+            new com.termux.app.ai.model.AIMessage(com.termux.app.ai.model.AIMessage.Role.ASSISTANT, "Run `df -h`");
+        assistantMsg.setProvider(AIProviderType.GEMINI);
+        assistantMsg.setModelId("gemini-2.5-flash");
+
+        store.saveMessages(java.util.Arrays.asList(userMsg, assistantMsg));
+
+        java.io.File tmpFile = new java.io.File(RuntimeEnvironment.getApplication().getFilesDir(), "termux_ai_conversation.json.tmp");
+        assertFalse("Temp file should not linger after atomic save", tmpFile.exists());
+
+        AIConversationStore reloaded = new AIConversationStore(RuntimeEnvironment.getApplication());
+        List<com.termux.app.ai.model.AIMessage> loaded = reloaded.loadMessages();
+        assertEquals(2, loaded.size());
+        assertEquals("Check disk usage", loaded.get(0).getContent());
+        assertEquals("Run `df -h`", loaded.get(1).getContent());
+        assertEquals(AIProviderType.GEMINI, loaded.get(1).getProvider());
+
+        store.clearHistory();
+        assertTrue(reloaded.loadMessages().isEmpty());
+    }
+
+    @Test
+    public void testAIAssistantHidesMissingKeyBannerForBuiltInProvider() {
+        AIManager manager = AIManager.getInstance(RuntimeEnvironment.getApplication());
+        manager.getSettings().setActiveProvider(AIProviderType.BUILTIN);
+
+        Intent intent = new Intent(RuntimeEnvironment.getApplication(), AIAssistantActivity.class);
+        try (ActivityController<AIAssistantActivity> controller = Robolectric.buildActivity(AIAssistantActivity.class, intent)) {
+            AIAssistantActivity activity = controller.create().start().resume().get();
+            View missingBanner = activity.findViewById(R.id.ai_missing_key_banner);
+            assertEquals(View.GONE, missingBanner.getVisibility());
+        }
+    }
+
+    @Test
+    public void testCommandHistoryStoreSearchAndDeleteLeavesShellHistoryIntact() throws Exception {
+        java.io.File tempDir = RuntimeEnvironment.getApplication().getCacheDir();
+        java.io.File storeFile = new java.io.File(tempDir, "test_cmd_hist_" + System.nanoTime() + ".json");
+        java.io.File bashHist = new java.io.File(tempDir, "test_bash_hist_" + System.nanoTime());
+        String originalBashContent = "pkg update\ngit status -sb\n";
+        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(bashHist)) {
+            fos.write(originalBashContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+
+        com.termux.app.autocomplete.CommandHistoryStore store =
+            new com.termux.app.autocomplete.CommandHistoryStore(
+                storeFile, java.util.Collections.singletonList(bashHist));
+        store.recordCommand("python3 app.py");
+
+        assertEquals(3, store.getAllEntriesSorted().size());
+        assertEquals(1, store.searchEntries("git").size());
+        assertTrue(store.deleteEntry("git status -sb"));
+        assertTrue(store.searchEntries("git").isEmpty());
+
+        // External shell history file must remain completely untouched
+        byte[] raw = java.nio.file.Files.readAllBytes(bashHist.toPath());
+        assertEquals(originalBashContent, new String(raw, java.nio.charset.StandardCharsets.UTF_8));
+
+        // Clean up temp test files
+        store.clearHistory();
+        //noinspection ResultOfMethodCallIgnored
+        bashHist.delete();
+        //noinspection ResultOfMethodCallIgnored
+        storeFile.delete();
     }
 }

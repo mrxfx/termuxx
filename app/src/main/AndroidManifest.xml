@@ -113,6 +113,96 @@
             tools:targetApi="n" />
 
         <activity
+            android:name=".app.activities.CommandHistoryActivity"
+            android:exported="false"
+            android:label="@string/history_title"
+            android:parentActivityName=".app.TermuxActivity"
+            android:resizeableActivity="true"
+            android:theme="@style/Theme.TermuxApp.DayNight.NoActionBar"
+            android:windowSoftInputMode="adjustResize"
+            tools:targetApi="n" />
+
+        <activity
+            android:name=".app.studio.TerminalStudioActivity"
+            android:exported="false"
+            android:label="@string/studio_title"
+            android:parentActivityName=".app.TermuxActivity"
+            android:resizeableActivity="true"
+            android:theme="@style/Theme.TermuxApp.DayNight.NoActionBar"
+            android:windowSoftInputMode="adjustResize"
+            tools:targetApi="n" />
+
+        <activity
+            android:name=".app.workspace.WorkspaceListActivity"
+            android:exported="false"
+            android:label="@string/title_workspace_manager"
+            android:parentActivityName=".app.TermuxActivity"
+            android:resizeableActivity="true"
+            android:theme="@style/Theme.TermuxApp.DayNight.NoActionBar"
+            android:windowSoftInputMode="adjustResize"
+            tools:targetApi="n" />
+
+        <activity
+            android:name=".app.workspace.WorkspaceEditorActivity"
+            android:exported="false"
+            android:label="@string/title_workspace_editor"
+            android:parentActivityName=".app.workspace.WorkspaceListActivity"
+            android:resizeableActivity="true"
+            android:theme="@style/Theme.TermuxApp.DayNight.NoActionBar"
+            android:windowSoftInputMode="adjustResize"
+            tools:targetApi="n" />
+
+        <activity
+            android:name=".app.workspace.ProfileManagerActivity"
+            android:exported="false"
+            android:label="@string/title_profile_manager"
+            android:parentActivityName=".app.workspace.WorkspaceListActivity"
+            android:resizeableActivity="true"
+            android:theme="@style/Theme.TermuxApp.DayNight.NoActionBar"
+            android:windowSoftInputMode="adjustResize"
+            tools:targetApi="n" />
+
+        <activity
+            android:name=".app.workspace.CommandSnippetActivity"
+            android:exported="false"
+            android:label="@string/title_snippet_manager"
+            android:parentActivityName=".app.workspace.WorkspaceListActivity"
+            android:resizeableActivity="true"
+            android:theme="@style/Theme.TermuxApp.DayNight.NoActionBar"
+            android:windowSoftInputMode="adjustResize"
+            tools:targetApi="n" />
+
+        <activity
+            android:name=".app.workspace.BackupManagerActivity"
+            android:exported="false"
+            android:label="@string/title_backup_manager"
+            android:parentActivityName=".app.workspace.WorkspaceListActivity"
+            android:resizeableActivity="true"
+            android:theme="@style/Theme.TermuxApp.DayNight.NoActionBar"
+            android:windowSoftInputMode="adjustResize"
+            tools:targetApi="n" />
+
+        <activity
+            android:name=".app.workspace.RestorePreviewActivity"
+            android:exported="false"
+            android:label="@string/title_restore_preview"
+            android:parentActivityName=".app.workspace.BackupManagerActivity"
+            android:resizeableActivity="true"
+            android:theme="@style/Theme.TermuxApp.DayNight.NoActionBar"
+            android:windowSoftInputMode="adjustResize"
+            tools:targetApi="n" />
+
+        <activity
+            android:name=".app.env.EnvironmentManagerActivity"
+            android:exported="false"
+            android:label="@string/title_environment_manager"
+            android:parentActivityName=".app.TermuxActivity"
+            android:resizeableActivity="true"
+            android:theme="@style/Theme.TermuxApp.DayNight.NoActionBar"
+            android:windowSoftInputMode="adjustResize"
+            tools:targetApi="n" />
+
+        <activity
             android:name=".shared.activities.ReportActivity"
             android:theme="@style/Theme.MarkdownViewActivity.DayNight"
             android:documentLaunchMode="intoExisting" />

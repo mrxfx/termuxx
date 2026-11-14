@@ -79,9 +79,24 @@ public final class TerminalCommandBridge {
      */
     @NonNull
     public static String sanitizeCommandForInsert(@NonNull String rawCommand) {
-        String clean = rawCommand.replace("\r\n", " && ").replace('\n', ' ').replace('\r', ' ');
-        // Collapse multi-line trailing whitespace and never emit CR/LF
-        return clean.trim();
+        String clean = rawCommand
+            .replace("\r\n", " && ")
+            .replace('\n', ' ')
+            .replace('\r', ' ')
+            .replace('\u0085', ' ')
+            .replace('\u2028', ' ')
+            .replace('\u2029', ' ');
+        StringBuilder sb = new StringBuilder(clean.length());
+        for (int i = 0; i < clean.length(); i++) {
+            char c = clean.charAt(i);
+            if (c == '\t') {
+                sb.append(' ');
+            } else if ((c >= 0x20 && c != 0x7F)) {
+                sb.append(c);
+            }
+        }
+        // Collapse multi-line trailing whitespace and never emit CR/LF or control sequences
+        return sb.toString().trim();
     }
 
     public static boolean insertIntoActiveTerminal(@NonNull String rawCommand) {

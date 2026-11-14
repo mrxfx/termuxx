@@ -2,11 +2,11 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:minHeight="40dp"
+    android:minHeight="44dp"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingHorizontal="10dp"
-    android:paddingVertical="6dp"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="7dp"
     android:background="?android:attr/selectableItemBackground">
 
     <TextView
@@ -15,9 +15,9 @@
         android:layout_height="wrap_content"
         android:background="@drawable/bg_autocomplete_badge"
         android:fontFamily="monospace"
-        android:paddingHorizontal="6dp"
-        android:paddingVertical="2dp"
-        android:textColor="#79C0FF"
+        android:paddingHorizontal="7dp"
+        android:paddingVertical="3dp"
+        android:textColor="@color/oneui_text_primary"
         android:textSize="10sp"
         android:textStyle="bold" />
 
@@ -25,12 +25,12 @@
         android:id="@+id/autocomplete_item_text"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
+        android:layout_marginStart="10dp"
         android:layout_weight="1"
         android:ellipsize="middle"
         android:fontFamily="monospace"
         android:singleLine="true"
-        android:textColor="#F0F6FC"
+        android:textColor="@color/oneui_text_primary"
         android:textSize="13sp" />
 
     <TextView
@@ -41,7 +41,7 @@
         android:ellipsize="end"
         android:maxWidth="135dp"
         android:singleLine="true"
-        android:textColor="#8B949E"
+        android:textColor="@color/oneui_text_secondary"
         android:textSize="11sp" />
 
 </LinearLayout>

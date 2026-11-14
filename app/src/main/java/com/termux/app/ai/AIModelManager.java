@@ -14,6 +14,12 @@ import java.util.Map;
 
 public class AIModelManager {
 
+    private static final List<AIModelInfo> DEFAULT_BUILTIN_MODELS = Arrays.asList(
+        new AIModelInfo("gemini-3.8-flash", "Gemini 3.8 Flash (Recommended · No Key)", AIProviderType.BUILTIN, true, 1048576),
+        new AIModelInfo("gemini-3.5-flash-lite", "Gemini 3.5 Flash-Lite (Ultra Fast · No Key)", AIProviderType.BUILTIN, true, 1048576),
+        new AIModelInfo("gemini-4-argon", "Gemini 4 Argon (Advanced · Blaze)", AIProviderType.BUILTIN, false, 1048576)
+    );
+
     private static final List<AIModelInfo> DEFAULT_GEMINI_MODELS = Arrays.asList(
         new AIModelInfo("gemini-2.5-flash", "Gemini 2.5 Flash (Recommended)", AIProviderType.GEMINI, false, 1048576),
         new AIModelInfo("gemini-2.5-pro", "Gemini 2.5 Pro", AIProviderType.GEMINI, false, 1048576),
@@ -33,6 +39,9 @@ public class AIModelManager {
 
     @NonNull
     public List<AIModelInfo> getBuiltInModels(@NonNull AIProviderType provider) {
+        if (provider == AIProviderType.BUILTIN) {
+            return Collections.unmodifiableList(DEFAULT_BUILTIN_MODELS);
+        }
         if (provider == AIProviderType.OPENROUTER) {
             return Collections.unmodifiableList(DEFAULT_OPENROUTER_MODELS);
         }

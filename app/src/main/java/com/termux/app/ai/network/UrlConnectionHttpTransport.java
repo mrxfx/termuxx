@@ -103,6 +103,7 @@ public class UrlConnectionHttpTransport implements HttpTransport {
 
     private HttpURLConnection openConnection(String urlStr, String method, Map<String, String> headers, @Nullable CancellationSignalHandle cancelHandle) throws IOException {
         URL url = new URL(urlStr);
+        validateSecureTransport(url);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod(method);
         conn.setConnectTimeout(mConnectTimeoutMs);
@@ -118,6 +119,39 @@ public class UrlConnectionHttpTransport implements HttpTransport {
             cancelHandle.setActiveConnection(conn);
         }
         return conn;
+    }
+
+    public static boolean isValidEndpointUrl(@NonNull String urlStr) {
+        try {
+            validateSecureTransport(new URL(urlStr));
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    private static void validateSecureTransport(@NonNull URL url) throws IOException {
+        String protocol = url.getProtocol() != null ? url.getProtocol().toLowerCase(java.util.Locale.US) : "";
+        if ("https".equals(protocol)) {
+            if (url.getHost() == null || url.getHost().trim().isEmpty()) {
+                throw new IOException("Invalid HTTPS URL: missing host.");
+            }
+            return;
+        }
+        if ("http".equals(protocol) && isLoopbackHost(url.getHost())) {
+            return;
+        }
+        throw new IOException("Cleartext HTTP is blocked for remote hosts. Use HTTPS.");
+    }
+
+    private static boolean isLoopbackHost(@Nullable String host) {
+        if (host == null) return false;
+        String h = host.trim().toLowerCase(java.util.Locale.US);
+        return "localhost".equals(h)
+            || "127.0.0.1".equals(h)
+            || "::1".equals(h)
+            || "[::1]".equals(h)
+            || "10.0.2.2".equals(h);
     }
 
     private static void writeBody(HttpURLConnection conn, String jsonBody) throws IOException {

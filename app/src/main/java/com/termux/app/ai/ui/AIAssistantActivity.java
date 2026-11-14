@@ -21,23 +21,31 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.SimpleItemAnimator;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.termux.R;
 import com.termux.app.activities.SettingsActivity;
 import com.termux.app.ai.AIManager;
 import com.termux.app.ai.AISettingsManager;
+import com.termux.app.ai.DeveloperAssistantHelper;
 import com.termux.app.ai.TerminalCommandBridge;
 import com.termux.app.ai.context.AIContextManager;
 import com.termux.app.ai.context.AIContextSnapshot;
+import com.termux.app.ai.firebase.AppCheckInit;
 import com.termux.app.ai.model.AIError;
 import com.termux.app.ai.model.AIMessage;
+import com.termux.app.ai.model.AIModelInfo;
 import com.termux.app.ai.model.AIProviderType;
 import com.termux.app.ai.model.AIResponse;
 import com.termux.app.ai.model.AIStreamCallback;
 import com.termux.app.ai.model.CancellationSignalHandle;
 import com.termux.app.ai.security.SensitiveDataRedactor;
+import com.termux.app.ui.OneUINavHelper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -63,11 +71,19 @@ public class AIAssistantActivity extends AppCompatActivity implements AIMessageA
     private final List<AIContextSnapshot.AttachedFile> mAttachedFiles = new ArrayList<>();
     private final Handler mMainHandler = new Handler(Looper.getMainLooper());
 
+    private static final long STREAM_UI_THROTTLE_MS = 60L;
+
     @Nullable
     private CancellationSignalHandle mActiveRequestHandle;
     private boolean mIsGenerating = false;
+    private long mConversationGeneration = 0L;
+    private boolean mStreamFlushScheduled = false;
+    @Nullable
+    private AIMessage mStreamingTargetMsg;
 
     private TextView mSubtitleView;
+    private View mProviderStatusDot;
+    private TextView mContextStrip;
     private View mMissingKeyBanner;
     private TextView mMissingKeyText;
     private TextView mAttachedBanner;
@@ -86,11 +102,14 @@ public class AIAssistantActivity extends AppCompatActivity implements AIMessageA
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        AppCheckInit.configureAppCheck(this, getIntent());
         setContentView(R.layout.activity_ai_assistant);
 
         mAiManager = AIManager.getInstance(this);
 
         mSubtitleView = findViewById(R.id.ai_provider_model_subtitle);
+        mProviderStatusDot = findViewById(R.id.ai_provider_status_dot);
+        mContextStrip = findViewById(R.id.ai_context_strip);
         mMissingKeyBanner = findViewById(R.id.ai_missing_key_banner);
         mMissingKeyText = findViewById(R.id.ai_missing_key_text);
         mAttachedBanner = findViewById(R.id.ai_attached_files_banner);
@@ -103,22 +122,58 @@ public class AIAssistantActivity extends AppCompatActivity implements AIMessageA
         LinearLayoutManager lm = new LinearLayoutManager(this);
         lm.setStackFromEnd(true);
         mRecyclerView.setLayoutManager(lm);
+        if (mRecyclerView.getItemAnimator() instanceof SimpleItemAnimator) {
+            ((SimpleItemAnimator) mRecyclerView.getItemAnimator()).setSupportsChangeAnimations(false);
+        }
         mRecyclerView.setAdapter(mAdapter);
 
         findViewById(R.id.ai_back_button).setOnClickListener(v -> finish());
+        findViewById(R.id.ai_provider_pill).setOnClickListener(v -> showProviderSwitcherDialog());
         findViewById(R.id.ai_settings_button).setOnClickListener(v -> openAISettings());
         findViewById(R.id.ai_configure_key_button).setOnClickListener(v -> openAISettings());
+        findViewById(R.id.ai_use_builtin_button).setOnClickListener(v -> {
+            mAiManager.getSettings().setActiveProvider(AIProviderType.BUILTIN);
+            updateHeaderStatus();
+        });
         findViewById(R.id.ai_context_preview_button).setOnClickListener(v -> showContextPreviewDialog());
+        mContextStrip.setOnClickListener(v -> showContextPreviewDialog());
         findViewById(R.id.ai_clear_chat_button).setOnClickListener(v -> confirmClearChat());
+
+        View envFixChip = findViewById(R.id.ai_chip_env_fix);
+        if (envFixChip != null) {
+            envFixChip.setOnClickListener(v ->
+                startActivity(new Intent(this, com.termux.app.env.EnvironmentManagerActivity.class)));
+        }
+
+        View devWorkflowsChip = findViewById(R.id.ai_chip_dev_workflows);
+        if (devWorkflowsChip != null) {
+            devWorkflowsChip.setOnClickListener(v -> showDeveloperWorkflowsDialog());
+        }
 
         findViewById(R.id.ai_chip_fix_error).setOnClickListener(v ->
             submitPrompt("Analyze the recent terminal output/error and suggest a safe command to fix it.", true));
         findViewById(R.id.ai_chip_explain_last).setOnClickListener(v ->
             submitPrompt("Explain my last terminal command, its flags, and any side effects.", false));
+        findViewById(R.id.ai_chip_analyze_project).setOnClickListener(v -> {
+            attachCurrentProjectStructureIfAvailable();
+            submitPrompt("Inspect the current directory context and project structure, and suggest safe next steps or commands for this project.", false);
+        });
         findViewById(R.id.ai_chip_bash_script).setOnClickListener(v ->
             mPromptInput.setText(R.string.ai_template_bash_script));
         findViewById(R.id.ai_chip_attach_file).setOnClickListener(v ->
             showAttachFileChooser());
+        findViewById(R.id.ai_composer_attach_button).setOnClickListener(v ->
+            showAttachFileChooser());
+
+        findViewById(R.id.ai_starter_fix_card).setOnClickListener(v ->
+            submitPrompt("Analyze the recent terminal output/error and suggest a safe command to fix it.", true));
+        findViewById(R.id.ai_starter_script_card).setOnClickListener(v -> {
+            mPromptInput.setText(R.string.ai_template_bash_script);
+            mPromptInput.setSelection(mPromptInput.getText().length());
+            mPromptInput.requestFocus();
+        });
+        findViewById(R.id.ai_starter_studio_card).setOnClickListener(v ->
+            submitPrompt("Help me configure Zsh or Fish with clean prompt themes and safe ~/.zshrc snippets in Termux.", false));
 
         mSendStopButton.setOnClickListener(v -> {
             if (mIsGenerating) {
@@ -136,6 +191,17 @@ public class AIAssistantActivity extends AppCompatActivity implements AIMessageA
             return false;
         });
 
+        BottomNavigationView bottomNav = findViewById(R.id.oneui_bottom_nav);
+        View bottomNavDivider = findViewById(R.id.ai_bottom_nav_divider);
+        OneUINavHelper.setupBottomNav(this, bottomNav, R.id.nav_ai);
+        View rootLayout = findViewById(R.id.ai_root_layout);
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (v, insets) -> {
+            boolean imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime());
+            bottomNav.setVisibility(imeVisible ? View.GONE : View.VISIBLE);
+            bottomNavDivider.setVisibility(imeVisible ? View.GONE : View.VISIBLE);
+            return ViewCompat.onApplyWindowInsets(v, insets);
+        });
+
         mMessages.addAll(mAiManager.getConversationStore().loadMessages());
         refreshChatList();
 
@@ -151,6 +217,8 @@ public class AIAssistantActivity extends AppCompatActivity implements AIMessageA
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        mConversationGeneration++;
+        mMainHandler.removeCallbacksAndMessages(null);
         if (mActiveRequestHandle != null) {
             mActiveRequestHandle.cancel();
             mActiveRequestHandle = null;
@@ -177,13 +245,78 @@ public class AIAssistantActivity extends AppCompatActivity implements AIMessageA
         String model = settings.getModelForProvider(provider);
         mSubtitleView.setText(provider.getDisplayName() + " · " + model);
 
-        boolean hasKey = mAiManager.getCredentials().hasApiKey(provider);
-        if (hasKey) {
+        boolean ready = !provider.requiresApiKey() || mAiManager.getCredentials().hasApiKey(provider);
+        if (mProviderStatusDot != null) {
+            mProviderStatusDot.setBackgroundResource(ready ? R.drawable.bg_status_dot_green : R.drawable.bg_status_dot_amber);
+        }
+        if (ready) {
             mMissingKeyBanner.setVisibility(View.GONE);
         } else {
             mMissingKeyBanner.setVisibility(View.VISIBLE);
             mMissingKeyText.setText(getString(R.string.ai_missing_key_for_provider, provider.getDisplayName()));
         }
+
+        if (mContextStrip != null) {
+            List<String> enabled = new ArrayList<>();
+            if (settings.isIncludeCwdEnabled()) enabled.add("CWD");
+            if (settings.isIncludeShellEnabled()) enabled.add("Shell");
+            if (settings.isIncludeLastCommandEnabled()) enabled.add("Last Cmd");
+            if (settings.isIncludeRecentOutputEnabled()) enabled.add("Output");
+            if (settings.isIncludeToolsEnabled()) enabled.add("CLI Tools");
+            if (enabled.isEmpty()) {
+                mContextStrip.setText(R.string.ai_context_strip_none);
+            } else {
+                mContextStrip.setText(getString(R.string.ai_context_strip_format, android.text.TextUtils.join(" · ", enabled)));
+            }
+        }
+    }
+
+    private void showProviderSwitcherDialog() {
+        AISettingsManager settings = mAiManager.getSettings();
+        AIProviderType[] providers = AIProviderType.values();
+        String[] labels = new String[providers.length];
+        int checked = 0;
+        AIProviderType current = settings.getActiveProvider();
+        for (int i = 0; i < providers.length; i++) {
+            AIProviderType p = providers[i];
+            boolean configured = !p.requiresApiKey() || mAiManager.getCredentials().hasApiKey(p);
+            labels[i] = p.getDisplayName() + " (" + settings.getModelForProvider(p) + ")" + (configured ? "" : " · Key needed");
+            if (p == current) checked = i;
+        }
+        new AlertDialog.Builder(this)
+            .setTitle(R.string.ai_switch_provider_title)
+            .setSingleChoiceItems(labels, checked, (d, which) -> {
+                AIProviderType chosen = providers[which];
+                settings.setActiveProvider(chosen);
+                updateHeaderStatus();
+                d.dismiss();
+                showModelPickerForProvider(chosen);
+            })
+            .setNeutralButton(R.string.action_open_settings, (d, w) -> openAISettings())
+            .setNegativeButton(android.R.string.cancel, null)
+            .show();
+    }
+
+    private void showModelPickerForProvider(@NonNull AIProviderType provider) {
+        List<AIModelInfo> models = mAiManager.getModelManager().getModelsForProvider(provider);
+        if (models.isEmpty()) return;
+        String currentModel = mAiManager.getSettings().getModelForProvider(provider);
+        String[] labels = new String[models.size()];
+        int checked = -1;
+        for (int i = 0; i < models.size(); i++) {
+            AIModelInfo info = models.get(i);
+            labels[i] = info.toString();
+            if (info.getId().equals(currentModel)) checked = i;
+        }
+        new AlertDialog.Builder(this)
+            .setTitle(provider.getDisplayName() + " Model")
+            .setSingleChoiceItems(labels, checked, (d, which) -> {
+                mAiManager.getSettings().setModelForProvider(provider, models.get(which).getId());
+                updateHeaderStatus();
+                d.dismiss();
+            })
+            .setNegativeButton(android.R.string.ok, null)
+            .show();
     }
 
     private void submitPrompt(@NonNull String rawPrompt, boolean forceIncludeOutput) {
@@ -215,19 +348,25 @@ public class AIAssistantActivity extends AppCompatActivity implements AIMessageA
         AIContextSnapshot snapshot = TerminalCommandBridge.captureSnapshot(mAttachedFiles);
         String redactedContext = AIContextManager.buildContextPayload(settings, snapshot, forceIncludeOutput);
 
+        final long requestGen = mConversationGeneration;
+        mStreamingTargetMsg = assistantMsg;
+        mStreamFlushScheduled = false;
+
         mActiveRequestHandle = mAiManager.sendConversation(requestHistory, redactedContext, new AIStreamCallback() {
             @Override
             public void onChunk(@NonNull String delta, @NonNull String accumulated) {
                 mMainHandler.post(() -> {
+                    if (isFinishing() || isDestroyed() || requestGen != mConversationGeneration) return;
                     assistantMsg.setContent(accumulated);
-                    mAdapter.notifyItemChanged(mMessages.size() - 1);
-                    mRecyclerView.scrollToPosition(mMessages.size() - 1);
+                    scheduleStreamUiFlush();
                 });
             }
 
             @Override
             public void onComplete(@NonNull AIResponse response) {
                 mMainHandler.post(() -> {
+                    if (isFinishing() || isDestroyed() || requestGen != mConversationGeneration) return;
+                    mStreamingTargetMsg = null;
                     assistantMsg.setStreaming(false);
                     assistantMsg.setContent(response.getText());
                     assistantMsg.setProvider(response.getProvider());
@@ -235,7 +374,7 @@ public class AIAssistantActivity extends AppCompatActivity implements AIMessageA
                     assistantMsg.setUsage(response.getUsage());
                     assistantMsg.setErrorMessage(null);
                     setGeneratingState(false);
-                    mAiManager.getConversationStore().saveMessages(mMessages);
+                    mAiManager.getConversationStore().saveMessagesAsync(mMessages);
                     refreshChatList();
                 });
             }
@@ -243,20 +382,36 @@ public class AIAssistantActivity extends AppCompatActivity implements AIMessageA
             @Override
             public void onError(@NonNull AIError error) {
                 mMainHandler.post(() -> {
+                    if (isFinishing() || isDestroyed() || requestGen != mConversationGeneration) return;
+                    mStreamingTargetMsg = null;
                     assistantMsg.setStreaming(false);
                     if (error.getType() == AIError.Type.CANCELLED) {
                         if (assistantMsg.getContent().trim().isEmpty()) {
                             assistantMsg.setContent("(Generation stopped)");
                         }
                     } else {
-                        assistantMsg.setErrorMessage(error.getMessage());
+                        assistantMsg.setErrorMessage(SensitiveDataRedactor.redact(error.getMessage()));
                     }
                     setGeneratingState(false);
-                    mAiManager.getConversationStore().saveMessages(mMessages);
+                    mAiManager.getConversationStore().saveMessagesAsync(mMessages);
                     refreshChatList();
                 });
             }
         });
+    }
+
+    private void scheduleStreamUiFlush() {
+        if (mStreamFlushScheduled) return;
+        mStreamFlushScheduled = true;
+        mMainHandler.postDelayed(() -> {
+            mStreamFlushScheduled = false;
+            if (isFinishing() || isDestroyed() || mStreamingTargetMsg == null) return;
+            int idx = mMessages.indexOf(mStreamingTargetMsg);
+            if (idx >= 0) {
+                mAdapter.notifyItemChanged(idx);
+                mRecyclerView.scrollToPosition(idx);
+            }
+        }, STREAM_UI_THROTTLE_MS);
     }
 
     private void stopActiveGeneration() {
@@ -291,9 +446,12 @@ public class AIAssistantActivity extends AppCompatActivity implements AIMessageA
             .setTitle(R.string.ai_clear_chat)
             .setMessage(R.string.ai_clear_chat_confirm)
             .setPositiveButton(android.R.string.ok, (d, w) -> {
+                mConversationGeneration++;
+                mStreamingTargetMsg = null;
                 stopActiveGeneration();
+                setGeneratingState(false);
                 mMessages.clear();
-                mAiManager.getConversationStore().clearHistory();
+                mAiManager.getConversationStore().clearHistoryAsync();
                 refreshChatList();
             })
             .setNegativeButton(android.R.string.cancel, null)
@@ -314,41 +472,78 @@ public class AIAssistantActivity extends AppCompatActivity implements AIMessageA
             .show();
     }
 
+    private void showDeveloperWorkflowsDialog() {
+        List<DeveloperAssistantHelper.DeveloperWorkflow> workflows = DeveloperAssistantHelper.getWorkflows();
+        String[] labels = new String[workflows.size()];
+        for (int i = 0; i < workflows.size(); i++) {
+            DeveloperAssistantHelper.DeveloperWorkflow wf = workflows.get(i);
+            labels[i] = wf.title + "  ·  " + wf.category;
+        }
+        new AlertDialog.Builder(this)
+            .setTitle("V3 Developer AI Workflows")
+            .setItems(labels, (d, which) -> {
+                DeveloperAssistantHelper.DeveloperWorkflow chosen = workflows.get(which);
+                if ("project_structure".equals(chosen.id)) {
+                    attachCurrentProjectStructureIfAvailable();
+                }
+                if (chosen.promptTemplate.endsWith(": ") || chosen.promptTemplate.endsWith("```")) {
+                    mPromptInput.setText(chosen.promptTemplate);
+                    mPromptInput.setSelection(mPromptInput.getText().length());
+                    mPromptInput.requestFocus();
+                } else {
+                    submitPrompt(chosen.promptTemplate, chosen.includeRecentOutput);
+                }
+            })
+            .setNegativeButton(android.R.string.cancel, null)
+            .show();
+    }
+
+    private void attachCurrentProjectStructureIfAvailable() {
+        AIContextSnapshot snapshot = TerminalCommandBridge.captureSnapshot(mAttachedFiles);
+        if (snapshot.cwd == null) return;
+        File dir = new File(snapshot.cwd);
+        String tree = DeveloperAssistantHelper.inspectSafeProjectStructure(dir);
+        if (!tree.isEmpty()) {
+            addAttachedFile(new AIContextSnapshot.AttachedFile(
+                "project_structure_tree.txt",
+                dir.getAbsolutePath(),
+                tree
+            ));
+        }
+    }
+
     private void showAttachFileChooser() {
         AIContextSnapshot snapshot = TerminalCommandBridge.captureSnapshot(mAttachedFiles);
-        List<File> cwdFiles = new ArrayList<>();
-        if (snapshot.cwd != null) {
-            File dir = new File(snapshot.cwd);
-            File[] listed = dir.listFiles();
-            if (listed != null) {
-                for (File f : listed) {
-                    if (f.isFile() && f.canRead() && !f.getName().startsWith(".")) {
-                        cwdFiles.add(f);
-                        if (cwdFiles.size() >= 12) break;
-                    }
-                }
-            }
-        }
+        File cwdDir = snapshot.cwd != null ? new File(snapshot.cwd) : null;
+        List<File> cwdFiles = DeveloperAssistantHelper.listSafeSelectableProjectFiles(cwdDir);
 
-        if (cwdFiles.isEmpty()) {
-            mFilePickerLauncher.launch(new String[]{"*/*"});
-            return;
+        List<String> optionLabels = new ArrayList<>();
+        final boolean hasValidCwd = cwdDir != null && cwdDir.exists() && cwdDir.isDirectory();
+        if (hasValidCwd) {
+            optionLabels.add("Attach Project Structure Tree (Safe Opt-In)");
         }
-
-        String[] labels = new String[cwdFiles.size() + 1];
-        for (int i = 0; i < cwdFiles.size(); i++) {
-            labels[i] = cwdFiles.get(i).getName();
+        for (File f : cwdFiles) {
+            optionLabels.add("File: " + f.getName());
         }
-        labels[cwdFiles.size()] = getString(R.string.ai_browse_system_files);
+        optionLabels.add(getString(R.string.ai_browse_system_files));
 
         new AlertDialog.Builder(this)
             .setTitle(R.string.ai_quick_attach_file)
-            .setItems(labels, (d, which) -> {
-                if (which == cwdFiles.size()) {
+            .setItems(optionLabels.toArray(new String[0]), (d, which) -> {
+                int idx = which;
+                if (hasValidCwd) {
+                    if (idx == 0) {
+                        attachCurrentProjectStructureIfAvailable();
+                        Toast.makeText(this, "Project directory tree attached (secrets excluded)", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    idx--;
+                }
+                if (idx == cwdFiles.size()) {
                     mFilePickerLauncher.launch(new String[]{"*/*"});
-                } else {
+                } else if (idx >= 0 && idx < cwdFiles.size()) {
                     try {
-                        AIContextSnapshot.AttachedFile attached = AIContextManager.readProjectFileSafely(cwdFiles.get(which));
+                        AIContextSnapshot.AttachedFile attached = AIContextManager.readProjectFileSafely(cwdFiles.get(idx));
                         if (attached != null) {
                             addAttachedFile(attached);
                         }
@@ -401,6 +596,11 @@ public class AIAssistantActivity extends AppCompatActivity implements AIMessageA
     }
 
     @Override
+    public void onReviewAndInsertCode(@NonNull String code) {
+        DeveloperAssistantHelper.showReviewAndInsertDialog(this, code, this::finish);
+    }
+
+    @Override
     public void onInsertCode(@NonNull String code) {
         boolean inserted = TerminalCommandBridge.insertIntoActiveTerminal(code);
         Toast.makeText(
@@ -415,6 +615,11 @@ public class AIAssistantActivity extends AppCompatActivity implements AIMessageA
     public void onExplainCode(@NonNull String code) {
         if (mIsGenerating) return;
         submitPrompt("Explain this command and each flag clearly:\n```bash\n" + code + "\n```", false);
+    }
+
+    @Override
+    public void onSaveCodeAsSnippet(@NonNull String code) {
+        DeveloperAssistantHelper.showSaveAsSnippetDialog(this, code);
     }
 
     @Override

@@ -134,6 +134,7 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
         }
 
         termuxSessionListNotifyUpdated();
+        mActivity.updateSessionSwitcherHeader();
     }
 
     @Override
@@ -311,6 +312,7 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
         // be stale, like current session not selected or scrolled to.
         checkAndScrollToSession(session);
         updateBackgroundColor();
+        mActivity.updateSessionSwitcherHeader();
     }
 
     void notifyOfSessionChange() {

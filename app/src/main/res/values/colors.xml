@@ -1,3 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Samsung One UI Inspired Dark Black & White Palette (LOCKED) -->
+    <color name="oneui_background">#000000</color>
+    <color name="oneui_surface">#111111</color>
+    <color name="oneui_surface_secondary">#1A1A1A</color>
+    <color name="oneui_surface_elevated">#222222</color>
+
+    <color name="oneui_text_primary">#FFFFFF</color>
+    <color name="oneui_text_secondary">#A3A3A3</color>
+    <color name="oneui_text_muted">#707070</color>
+
+    <color name="oneui_divider">#292929</color>
+    <color name="oneui_border">#303030</color>
+
+    <color name="oneui_accent">#FFFFFF</color>
+    <color name="oneui_on_accent">#000000</color>
+
+    <!-- Semantic Colors (status only) -->
+    <color name="oneui_success">#4CAF50</color>
+    <color name="oneui_warning">#FFB020</color>
+    <color name="oneui_error">#FF5252</color>
+
+    <!-- Component Surfaces -->
+    <color name="oneui_code_background">#0A0A0A</color>
+    <color name="oneui_code_header">#151515</color>
+    <color name="oneui_autocomplete_panel_bg">#F2161616</color>
+    <color name="oneui_ripple_light">#1FFFFFFF</color>
+    <color name="oneui_nav_bar_bg">#050505</color>
+    <color name="oneui_nav_indicator">#222222</color>
 </resources>

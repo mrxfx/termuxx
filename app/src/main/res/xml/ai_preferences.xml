@@ -22,6 +22,29 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        app:key="ai_cat_builtin"
+        app:title="@string/ai_cat_builtin">
+
+        <Preference
+            app:key="ai_builtin_status"
+            app:title="@string/ai_builtin_status_title"
+            app:summary="@string/ai_builtin_status_summary"
+            app:persistent="false" />
+
+        <ListPreference
+            app:key="ai_builtin_model"
+            app:title="@string/ai_builtin_model_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <Preference
+            app:key="ai_builtin_test_connection"
+            app:title="@string/ai_test_connection_title"
+            app:summary="Verify Built-in AI service availability"
+            app:persistent="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:key="ai_cat_gemini"
         app:title="@string/ai_cat_gemini">
 

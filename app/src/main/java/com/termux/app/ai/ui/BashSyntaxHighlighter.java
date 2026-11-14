@@ -14,11 +14,11 @@ import java.util.regex.Pattern;
  */
 public final class BashSyntaxHighlighter {
 
-    private static final int COLOR_COMMENT = 0xFF8B949E;
-    private static final int COLOR_STRING = 0xFFA5D6FF;
-    private static final int COLOR_KEYWORD = 0xFFFF7B72;
-    private static final int COLOR_VARIABLE = 0xFFFFA657;
-    private static final int COLOR_FLAG = 0xFF79C0FF;
+    private static final int COLOR_COMMENT = 0xFF707070;
+    private static final int COLOR_STRING = 0xFFD4D4D4;
+    private static final int COLOR_KEYWORD = 0xFFFFFFFF;
+    private static final int COLOR_VARIABLE = 0xFFFFB020;
+    private static final int COLOR_FLAG = 0xFFA3A3A3;
 
     private static final Pattern COMMENT_PATTERN = Pattern.compile("(?m)#.*$");
     private static final Pattern STRING_PATTERN = Pattern.compile("\"([^\"\\\\]|\\\\.)*\"|'([^'\\\\]|\\\\.)*'");

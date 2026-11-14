@@ -16,6 +16,7 @@ import com.termux.app.ai.model.CancellationSignalHandle;
 import com.termux.app.ai.network.HttpTransport;
 import com.termux.app.ai.network.UrlConnectionHttpTransport;
 import com.termux.app.ai.provider.AIProvider;
+import com.termux.app.ai.provider.BuiltInFirebaseProvider;
 import com.termux.app.ai.provider.GeminiProvider;
 import com.termux.app.ai.provider.OpenRouterProvider;
 import com.termux.app.ai.security.KeystoreCredentialManager;
@@ -53,6 +54,7 @@ public class AIManager {
         mCredentials = new KeystoreCredentialManager(context);
         mModelManager = new AIModelManager();
         Map<AIProviderType, AIProvider> providers = new EnumMap<>(AIProviderType.class);
+        providers.put(AIProviderType.BUILTIN, new BuiltInFirebaseProvider());
         providers.put(AIProviderType.GEMINI, new GeminiProvider(transport));
         providers.put(AIProviderType.OPENROUTER, new OpenRouterProvider(transport));
         mRequestManager = new AIRequestManager(providers);
@@ -87,8 +89,8 @@ public class AIManager {
     ) {
         CancellationSignalHandle cancelHandle = new CancellationSignalHandle();
         AIProviderType primary = mSettings.getActiveProvider();
-        String primaryKey = mCredentials.getApiKey(primary);
-        if (primaryKey == null || primaryKey.trim().isEmpty()) {
+        String primaryKey = primary.requiresApiKey() ? mCredentials.getApiKey(primary) : "";
+        if (primary.requiresApiKey() && (primaryKey == null || primaryKey.trim().isEmpty())) {
             callback.onError(new AIError(
                 AIError.Type.MISSING_API_KEY,
                 0,
@@ -98,6 +100,7 @@ public class AIManager {
             ));
             return cancelHandle;
         }
+        if (primaryKey == null) primaryKey = "";
 
         String systemPrompt = buildSystemPrompt(redactedContextBlock);
         String primaryModel = mSettings.getModelForProvider(primary);
@@ -109,9 +112,12 @@ public class AIManager {
         AIRequest primaryReq = new AIRequest(history, systemPrompt, primaryModel, temperature, maxTokens, stream, proxyUrl);
 
         boolean explicitFallback = mSettings.isExplicitFallbackEnabled();
-        AIProviderType secondary = primary == AIProviderType.GEMINI ? AIProviderType.OPENROUTER : AIProviderType.GEMINI;
-        String secondaryKey = explicitFallback ? mCredentials.getApiKey(secondary) : null;
-        AIRequest fallbackReq = (explicitFallback && secondaryKey != null && !secondaryKey.trim().isEmpty())
+        AIProviderType secondary = resolveFallbackProvider(primary);
+        String secondaryKey = (explicitFallback && secondary != null)
+            ? (secondary.requiresApiKey() ? mCredentials.getApiKey(secondary) : "")
+            : null;
+        boolean secondaryReady = secondary != null && (!secondary.requiresApiKey() || (secondaryKey != null && !secondaryKey.trim().isEmpty()));
+        AIRequest fallbackReq = (explicitFallback && secondaryReady)
             ? new AIRequest(history, systemPrompt, mSettings.getModelForProvider(secondary), temperature, maxTokens, stream, proxyUrl)
             : null;
 
@@ -123,26 +129,41 @@ public class AIManager {
         return cancelHandle;
     }
 
+    @Nullable
+    private AIProviderType resolveFallbackProvider(@NonNull AIProviderType primary) {
+        if (primary == AIProviderType.BUILTIN) {
+            if (mCredentials.hasApiKey(AIProviderType.GEMINI)) return AIProviderType.GEMINI;
+            if (mCredentials.hasApiKey(AIProviderType.OPENROUTER)) return AIProviderType.OPENROUTER;
+            return null;
+        }
+        if (primary == AIProviderType.GEMINI) {
+            if (mCredentials.hasApiKey(AIProviderType.OPENROUTER)) return AIProviderType.OPENROUTER;
+            return AIProviderType.BUILTIN;
+        }
+        if (mCredentials.hasApiKey(AIProviderType.GEMINI)) return AIProviderType.GEMINI;
+        return AIProviderType.BUILTIN;
+    }
+
     @NonNull
     public AIModelInfo testConnectionSync(@NonNull AIProviderType provider) throws AIException {
-        String key = mCredentials.getApiKey(provider);
-        if (key == null || key.trim().isEmpty()) {
+        String key = provider.requiresApiKey() ? mCredentials.getApiKey(provider) : "";
+        if (provider.requiresApiKey() && (key == null || key.trim().isEmpty())) {
             throw new AIException(new AIError(AIError.Type.MISSING_API_KEY, 0,
                 provider.getDisplayName() + " API key is not configured.", provider, false));
         }
         return mRequestManager.testConnectionSync(
-            provider, key, mSettings.getModelForProvider(provider), mSettings.getCustomProxyUrl()
+            provider, key == null ? "" : key, mSettings.getModelForProvider(provider), mSettings.getCustomProxyUrl()
         );
     }
 
     @NonNull
     public List<AIModelInfo> fetchModelsSync(@NonNull AIProviderType provider) throws AIException {
-        String key = mCredentials.getApiKey(provider);
-        if (key == null || key.trim().isEmpty()) {
+        String key = provider.requiresApiKey() ? mCredentials.getApiKey(provider) : "";
+        if (provider.requiresApiKey() && (key == null || key.trim().isEmpty())) {
             throw new AIException(new AIError(AIError.Type.MISSING_API_KEY, 0,
                 provider.getDisplayName() + " API key is not configured.", provider, false));
         }
-        List<AIModelInfo> models = mRequestManager.listModelsSync(provider, key, mSettings.getCustomProxyUrl());
+        List<AIModelInfo> models = mRequestManager.listModelsSync(provider, key == null ? "" : key, mSettings.getCustomProxyUrl());
         mModelManager.updateFetchedModels(provider, models);
         return models;
     }

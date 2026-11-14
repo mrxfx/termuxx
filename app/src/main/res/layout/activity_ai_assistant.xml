@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/ai_root_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0D1117"
+    android:background="@color/oneui_background"
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
-    <!-- Top App Bar -->
+    <!-- Samsung One UI Top App Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="#161B22"
+        android:background="@color/oneui_background"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="8dp">
+        android:paddingHorizontal="6dp">
 
         <ImageButton
             android:id="@+id/ai_back_button"
@@ -23,32 +24,69 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/ai_action_back"
             android:padding="12dp"
-            android:src="@drawable/ic_close"
-            app:tint="#F0F6FC" />
+            android:src="@drawable/ic_back"
+            app:tint="@color/oneui_text_primary" />
 
         <LinearLayout
+            android:id="@+id/ai_provider_pill"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:layout_weight="1"
-            android:orientation="vertical">
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:contentDescription="@string/ai_switch_provider_title"
+            android:focusable="true"
+            android:minHeight="48dp"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            android:paddingHorizontal="6dp">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/ai_assistant_title"
-                android:textColor="#F0F6FC"
-                android:textSize="17sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/ai_provider_model_subtitle"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/ai_assistant_title"
+                    android:textColor="@color/oneui_text_primary"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginStart="4dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_chevron_down"
+                    app:tint="@color/oneui_text_secondary" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:singleLine="true"
-                android:textColor="#79C0FF"
-                android:textSize="12sp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/ai_provider_status_dot"
+                    android:layout_width="7dp"
+                    android:layout_height="7dp"
+                    android:layout_marginEnd="6dp"
+                    android:background="@drawable/bg_status_dot_green" />
+
+                <TextView
+                    android:id="@+id/ai_provider_model_subtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:textColor="@color/oneui_text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
         </LinearLayout>
 
         <ImageButton
@@ -58,8 +96,8 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/ai_context_preview_title"
             android:padding="12dp"
-            android:src="@drawable/ic_tune"
-            app:tint="#C9D1D9" />
+            android:src="@drawable/ic_shield"
+            app:tint="@color/oneui_text_secondary" />
 
         <ImageButton
             android:id="@+id/ai_settings_button"
@@ -68,33 +106,33 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/action_open_settings"
             android:padding="12dp"
-            android:src="@drawable/ic_settings"
-            app:tint="#C9D1D9" />
+            android:src="@drawable/ic_tune"
+            app:tint="@color/oneui_text_secondary" />
 
-        <com.google.android.material.button.MaterialButton
+        <ImageButton
             android:id="@+id/ai_clear_chat_button"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
+            android:layout_width="48dp"
             android:layout_height="48dp"
-            android:minWidth="48dp"
-            android:text="@string/ai_clear_chat"
-            android:textAllCaps="false"
-            android:textColor="#FF7B72"
-            android:textSize="12sp" />
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/ai_clear_chat"
+            android:padding="12dp"
+            android:src="@drawable/ic_delete"
+            app:tint="@color/oneui_text_secondary" />
     </LinearLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#30363D" />
+        android:background="@color/oneui_divider" />
 
     <!-- Quick Action Chips -->
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#0D1117"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="8dp"
+        android:background="@color/oneui_background"
+        android:paddingHorizontal="14dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="8dp"
         android:scrollbars="none">
 
         <LinearLayout
@@ -103,73 +141,103 @@
             android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/ai_chip_env_fix"
+                style="@style/OneUI.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginEnd="8dp"
+                android:text="Env &amp; Error Fix"
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/ai_chip_dev_workflows"
+                style="@style/OneUI.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginEnd="8dp"
+                android:text="Dev Workflows (16)"
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/ai_chip_fix_error"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                style="@style/OneUI.TonalButton"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:layout_marginEnd="8dp"
                 android:text="@string/ai_quick_fix_error"
-                android:textAllCaps="false"
-                android:textColor="#C9D1D9"
-                android:textSize="12sp"
-                app:strokeColor="#30363D" />
+                android:textSize="12sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/ai_chip_explain_last"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                style="@style/OneUI.TonalButton"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:layout_marginEnd="8dp"
                 android:text="@string/ai_quick_explain_last"
-                android:textAllCaps="false"
-                android:textColor="#C9D1D9"
-                android:textSize="12sp"
-                app:strokeColor="#30363D" />
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/ai_chip_analyze_project"
+                style="@style/OneUI.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginEnd="8dp"
+                android:text="@string/ai_quick_analyze_project"
+                android:textSize="12sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/ai_chip_bash_script"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                style="@style/OneUI.TonalButton"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:layout_marginEnd="8dp"
                 android:text="@string/ai_quick_write_script"
-                android:textAllCaps="false"
-                android:textColor="#C9D1D9"
-                android:textSize="12sp"
-                app:strokeColor="#30363D" />
+                android:textSize="12sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/ai_chip_attach_file"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                style="@style/OneUI.TonalButton"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:text="@string/ai_quick_attach_file"
-                android:textAllCaps="false"
-                android:textColor="#79C0FF"
-                android:textSize="12sp"
-                app:strokeColor="#388BFD" />
+                android:textSize="12sp" />
 
         </LinearLayout>
     </HorizontalScrollView>
+
+    <!-- Live Context Sharing Strip (Clickable to inspect exact redacted context) -->
+    <TextView
+        android:id="@+id/ai_context_strip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/oneui_surface"
+        android:clickable="true"
+        android:ellipsize="end"
+        android:focusable="true"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="6dp"
+        android:singleLine="true"
+        android:textColor="@color/oneui_text_secondary"
+        android:textSize="11sp" />
 
     <!-- Attached Files Summary Strip -->
     <TextView
         android:id="@+id/ai_attached_files_banner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#161B22"
-        android:paddingHorizontal="14dp"
+        android:background="@color/oneui_surface_secondary"
+        android:paddingHorizontal="16dp"
         android:paddingVertical="6dp"
-        android:textColor="#79C0FF"
+        android:textColor="@color/oneui_text_primary"
         android:textSize="12sp"
         android:visibility="gone" />
 
-    <!-- Key Missing Warning Banner -->
+    <!-- Key Missing Warning Banner (For BYOK Gemini/OpenRouter without keys) -->
     <LinearLayout
         android:id="@+id/ai_missing_key_banner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#332A14"
+        android:background="@color/oneui_surface_secondary"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="14dp"
@@ -182,7 +250,17 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/ai_missing_key_banner"
-            android:textColor="#F2CC60"
+            android:textColor="@color/oneui_warning"
+            android:textSize="12sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/ai_use_builtin_button"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="@string/ai_use_builtin_button"
+            android:textAllCaps="false"
+            android:textColor="@color/oneui_text_primary"
             android:textSize="12sp" />
 
         <com.google.android.material.button.MaterialButton
@@ -192,11 +270,11 @@
             android:layout_height="40dp"
             android:text="@string/ai_configure_button"
             android:textAllCaps="false"
-            android:textColor="#58A6FF"
+            android:textColor="@color/oneui_text_secondary"
             android:textSize="12sp" />
     </LinearLayout>
 
-    <!-- Chat Stream / Empty State -->
+    <!-- Chat Stream / One UI Empty State -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -207,74 +285,186 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:paddingHorizontal="12dp"
+            android:paddingHorizontal="14dp"
             android:paddingVertical="12dp" />
 
-        <LinearLayout
+        <ScrollView
             android:id="@+id/ai_empty_state"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="28dp">
+            android:fillViewport="true">
 
-            <ImageView
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:contentDescription="@string/ai_assistant_title"
-                android:src="@drawable/ic_ai_sparkle"
-                app:tint="#58A6FF" />
-
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/ai_empty_title"
-                android:textColor="#F0F6FC"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
                 android:gravity="center"
-                android:text="@string/ai_empty_subtitle"
-                android:textColor="#8B949E"
-                android:textSize="13sp" />
-        </LinearLayout>
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <FrameLayout
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/bg_oneui_surface_card">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@string/ai_assistant_title"
+                        android:src="@drawable/ic_ai_sparkle"
+                        app:tint="@color/oneui_text_primary" />
+                </FrameLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/ai_empty_title"
+                    android:textColor="@color/oneui_text_primary"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:text="@string/ai_empty_subtitle"
+                    android:textColor="@color/oneui_text_secondary"
+                    android:textSize="13sp" />
+
+                <!-- One UI Starter Cards -->
+                <LinearLayout
+                    android:id="@+id/ai_starter_fix_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="22dp"
+                    android:background="@drawable/bg_oneui_surface_card"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:minHeight="56dp"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/ai_starter_fix_title"
+                        android:textColor="@color/oneui_text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="@string/ai_starter_fix_desc"
+                        android:textColor="@color/oneui_text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/ai_starter_script_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_oneui_surface_card"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:minHeight="56dp"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/ai_starter_script_title"
+                        android:textColor="@color/oneui_text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="@string/ai_starter_script_desc"
+                        android:textColor="@color/oneui_text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/ai_starter_studio_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_oneui_surface_card"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:minHeight="56dp"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/ai_starter_studio_title"
+                        android:textColor="@color/oneui_text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="@string/ai_starter_studio_desc"
+                        android:textColor="@color/oneui_text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
     </FrameLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#30363D" />
+        android:background="@color/oneui_divider" />
 
     <!-- Bottom Prompt Composer -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#161B22"
+        android:background="@color/oneui_background"
         android:gravity="bottom"
         android:orientation="horizontal"
-        android:paddingHorizontal="10dp"
-        android:paddingVertical="8dp">
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="10dp">
+
+        <ImageButton
+            android:id="@+id/ai_composer_attach_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="6dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/ai_quick_attach_file"
+            android:padding="12dp"
+            android:src="@drawable/ic_attach"
+            app:tint="@color/oneui_text_secondary" />
 
         <EditText
             android:id="@+id/ai_prompt_input"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="@drawable/bg_ai_code_block"
+            android:background="@drawable/bg_oneui_search_bar"
             android:hint="@string/ai_prompt_hint"
             android:imeOptions="actionSend"
             android:inputType="textMultiLine|textCapSentences"
             android:maxLines="5"
             android:minHeight="48dp"
-            android:paddingHorizontal="14dp"
-            android:paddingVertical="10dp"
-            android:textColor="#F0F6FC"
-            android:textColorHint="#8B949E"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp"
+            android:textColor="@color/oneui_text_primary"
+            android:textColorHint="@color/oneui_text_muted"
             android:textSize="14sp" />
 
         <ImageButton
@@ -282,11 +472,24 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginStart="8dp"
-            android:background="@drawable/bg_ai_fab_pill"
+            android:background="@drawable/bg_oneui_pill_white"
             android:contentDescription="@string/ai_send_prompt"
             android:padding="12dp"
             android:src="@drawable/ic_send"
-            app:tint="#FFFFFF" />
+            app:tint="@color/oneui_on_accent" />
     </LinearLayout>
+
+    <View
+        android:id="@+id/ai_bottom_nav_divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/oneui_divider" />
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/oneui_bottom_nav"
+        style="@style/OneUI.BottomNav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:menu="@menu/menu_oneui_bottom_nav" />
 
 </LinearLayout>

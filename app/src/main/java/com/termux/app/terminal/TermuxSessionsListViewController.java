@@ -50,6 +50,7 @@ public class TermuxSessionsListViewController extends ArrayAdapter<TermuxSession
         }
 
         TextView sessionTitleView = sessionRowView.findViewById(R.id.session_title);
+        View statusDot = sessionRowView.findViewById(R.id.session_status_dot);
 
         TerminalSession sessionAtRow = getItem(position).getTerminalSession();
         if (sessionAtRow == null) {
@@ -57,13 +58,9 @@ public class TermuxSessionsListViewController extends ArrayAdapter<TermuxSession
             return sessionRowView;
         }
 
-        boolean shouldEnableDarkTheme = ThemeUtils.shouldEnableDarkTheme(mActivity, NightMode.getAppNightMode().getName());
-
-        if (shouldEnableDarkTheme) {
-            sessionTitleView.setBackground(
-                ContextCompat.getDrawable(mActivity, R.drawable.session_background_black_selected)
-            );
-        }
+        sessionRowView.setBackground(
+            ContextCompat.getDrawable(mActivity, R.drawable.session_background_black_selected)
+        );
 
         String name = sessionAtRow.mSessionName;
         String sessionTitle = sessionAtRow.getTitle();
@@ -86,9 +83,13 @@ public class TermuxSessionsListViewController extends ArrayAdapter<TermuxSession
         } else {
             sessionTitleView.setPaintFlags(sessionTitleView.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
         }
-        int defaultColor = shouldEnableDarkTheme ? Color.WHITE : Color.BLACK;
-        int color = sessionRunning || sessionAtRow.getExitStatus() == 0 ? defaultColor : Color.RED;
+        int defaultColor = ContextCompat.getColor(mActivity, R.color.oneui_text_primary);
+        int errorColor = ContextCompat.getColor(mActivity, R.color.oneui_error);
+        int color = sessionRunning || sessionAtRow.getExitStatus() == 0 ? defaultColor : errorColor;
         sessionTitleView.setTextColor(color);
+        if (statusDot != null) {
+            statusDot.setBackgroundResource(sessionRunning ? R.drawable.bg_status_dot_green : R.drawable.bg_status_dot_amber);
+        }
         return sessionRowView;
     }
 

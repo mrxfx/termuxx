@@ -1,149 +1,430 @@
+<?xml version="1.0" encoding="utf-8"?>
 <com.termux.app.terminal.TermuxActivityRootView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_termux_root_view"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:fitsSystemWindows="true">
+    android:background="@color/oneui_background"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
 
     <RelativeLayout
         android:id="@+id/activity_termux_root_relative_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginHorizontal="3dp"
+        android:layout_marginHorizontal="0dp"
         android:layout_marginVertical="0dp"
-        android:orientation="vertical">
+        android:background="@color/oneui_background">
 
         <androidx.drawerlayout.widget.DrawerLayout
             android:id="@+id/drawer_layout"
             android:layout_width="match_parent"
-            android:layout_alignParentTop="true"
+            android:layout_height="match_parent"
             android:layout_above="@+id/terminal_toolbar_view_pager"
-            android:layout_height="match_parent">
+            android:layout_alignParentTop="true">
 
-            <FrameLayout
+            <!-- Primary Terminal Workspace -->
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="match_parent"
+                android:background="@color/oneui_background"
+                android:orientation="vertical">
 
-                <com.termux.view.TerminalView
-                    android:id="@+id/terminal_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:defaultFocusHighlightEnabled="false"
-                    android:focusableInTouchMode="true"
-                    android:scrollbarThumbVertical="@drawable/terminal_scroll_shape"
-                    android:scrollbars="vertical"
-                    tools:ignore="UnusedAttribute" />
-
+                <!-- One UI Compact Terminal Top App Bar -->
                 <LinearLayout
-                    android:id="@+id/ai_assistant_pill"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top|end"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginEnd="8dp"
-                    android:alpha="0.90"
-                    android:background="@drawable/bg_ai_fab_pill"
-                    android:clickable="true"
-                    android:contentDescription="@string/ai_terminal_pill_desc"
-                    android:focusable="false"
-                    android:gravity="center"
-                    android:minWidth="48dp"
-                    android:minHeight="48dp"
+                    android:id="@+id/terminal_top_bar"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:background="@color/oneui_background"
+                    android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="8dp">
+                    android:paddingHorizontal="6dp">
 
-                    <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_ai_sparkle" />
+                    <ImageButton
+                        android:id="@+id/drawer_menu_button"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/action_open_drawer"
+                        android:padding="12dp"
+                        android:src="@drawable/ic_menu"
+                        app:tint="@color/oneui_text_primary" />
+
+                    <!-- Active Session Switcher Pill -->
+                    <LinearLayout
+                        android:id="@+id/session_switcher_pill"
+                        android:layout_width="0dp"
+                        android:layout_height="38dp"
+                        android:layout_marginHorizontal="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_oneui_pill_elevated"
+                        android:clickable="true"
+                        android:contentDescription="@string/terminal_sessions_header"
+                        android:focusable="false"
+                        android:gravity="center_vertical"
+                        android:minHeight="48dp"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="12dp">
+
+                        <View
+                            android:id="@+id/session_switcher_dot"
+                            android:layout_width="8dp"
+                            android:layout_height="8dp"
+                            android:background="@drawable/bg_status_dot_green" />
+
+                        <TextView
+                            android:id="@+id/session_switcher_label"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="@string/application_name"
+                            android:textColor="@color/oneui_text_primary"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:layout_marginStart="4dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_chevron_down"
+                            app:tint="@color/oneui_text_secondary" />
+                    </LinearLayout>
+
+                    <ImageButton
+                        android:id="@+id/top_new_session_button"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/action_new_session"
+                        android:padding="12dp"
+                        android:src="@drawable/ic_new_session"
+                        app:tint="@color/oneui_text_primary" />
+
+                    <!-- Compact AI Trigger Pill -->
+                    <LinearLayout
+                        android:id="@+id/ai_assistant_pill"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:layout_marginHorizontal="2dp"
+                        android:background="@drawable/bg_ai_fab_pill"
+                        android:clickable="true"
+                        android:contentDescription="@string/ai_terminal_pill_desc"
+                        android:focusable="false"
+                        android:gravity="center"
+                        android:minWidth="48dp"
+                        android:minHeight="48dp"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="12dp">
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_ai_sparkle"
+                            app:tint="@color/oneui_text_primary" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:text="@string/ai_terminal_pill_label"
+                            android:textColor="@color/oneui_text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <ImageButton
+                        android:id="@+id/top_more_button"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/action_more_options"
+                        android:padding="12dp"
+                        android:src="@drawable/ic_more_vert"
+                        app:tint="@color/oneui_text_primary" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/oneui_divider" />
+
+                <!-- Terminal Rendering Frame + Offline Autocomplete Overlay -->
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1">
+
+                    <com.termux.view.TerminalView
+                        android:id="@+id/terminal_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:defaultFocusHighlightEnabled="false"
+                        android:focusableInTouchMode="true"
+                        android:scrollbarThumbVertical="@drawable/terminal_scroll_shape"
+                        android:scrollbars="vertical"
+                        tools:ignore="UnusedAttribute" />
+
+                    <include
+                        layout="@layout/view_autocomplete_bar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom" />
+
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- Samsung One UI Monochrome Workspace Navigation Drawer -->
+            <LinearLayout
+                android:id="@+id/left_drawer"
+                android:layout_width="288dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="start"
+                android:background="@color/oneui_background"
+                android:descendantFocusability="blocksDescendants"
+                android:orientation="vertical">
+
+                <!-- Drawer Header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="20dp"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="14dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:text="@string/ai_terminal_pill_label"
-                        android:textColor="#F0F6FC"
-                        android:textSize="12sp"
+                        android:text="@string/application_name"
+                        android:textColor="@color/oneui_text_primary"
+                        android:textSize="22sp"
                         android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/drawer_ai_status_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/ai_builtin_status_title"
+                        android:textColor="@color/oneui_text_secondary"
+                        android:textSize="12sp" />
                 </LinearLayout>
 
-                <include
-                    layout="@layout/view_autocomplete_bar"
+                <!-- Quick Navigation Destinations Card -->
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="bottom" />
-
-            </FrameLayout>
-
-            <LinearLayout
-                android:id="@+id/left_drawer"
-                android:layout_width="240dp"
-                android:layout_height="match_parent"
-                android:layout_gravity="start"
-                android:choiceMode="singleChoice"
-                android:divider="@android:color/transparent"
-                android:dividerHeight="0dp"
-                android:descendantFocusability="blocksDescendants"
-                android:orientation="vertical"
-                android:background="?attr/termuxActivityDrawerBackground">
+                    android:letterSpacing="0.08"
+                    android:paddingHorizontal="20dp"
+                    android:paddingBottom="6dp"
+                    android:text="@string/drawer_quick_nav_header"
+                    android:textColor="@color/oneui_text_muted"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-                    <ImageButton
-                        android:id="@+id/settings_button"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:src="@drawable/ic_settings"
-                        android:background="@null"
-                        android:contentDescription="@string/action_open_settings"
-                        app:tint="?attr/termuxActivityDrawerImageTint" />
+                    android:layout_marginHorizontal="14dp"
+                    android:background="@drawable/bg_oneui_surface_card"
+                    android:orientation="vertical"
+                    android:paddingVertical="4dp">
 
-                    <ImageButton
+                    <LinearLayout
                         android:id="@+id/ai_drawer_button"
-                        android:layout_width="48dp"
+                        android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        android:src="@drawable/ic_ai_sparkle"
-                        android:background="@null"
-                        android:contentDescription="@string/action_ai_assistant" />
+                        android:background="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="16dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_ai_sparkle"
+                            app:tint="@color/oneui_text_primary" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:text="@string/action_ai_assistant"
+                            android:textColor="@color/oneui_text_primary"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginStart="50dp"
+                        android:background="@color/oneui_divider" />
+
+                    <LinearLayout
+                        android:id="@+id/studio_drawer_button"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="16dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_studio"
+                            app:tint="@color/oneui_text_primary" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:text="@string/studio_title"
+                            android:textColor="@color/oneui_text_primary"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginStart="50dp"
+                        android:background="@color/oneui_divider" />
+
+                    <LinearLayout
+                        android:id="@+id/history_drawer_button"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="16dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_history"
+                            app:tint="@color/oneui_text_primary" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:text="@string/history_title"
+                            android:textColor="@color/oneui_text_primary"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginStart="50dp"
+                        android:background="@color/oneui_divider" />
+
+                    <LinearLayout
+                        android:id="@+id/settings_button"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="16dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_settings"
+                            app:tint="@color/oneui_text_primary" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:text="@string/action_open_settings"
+                            android:textColor="@color/oneui_text_primary"
+                            android:textSize="14sp" />
+                    </LinearLayout>
                 </LinearLayout>
+
+                <!-- Sessions Section Header -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.08"
+                    android:paddingHorizontal="20dp"
+                    android:paddingTop="18dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/terminal_sessions_header"
+                    android:textColor="@color/oneui_text_muted"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
 
                 <ListView
                     android:id="@+id/terminal_sessions_list"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:layout_gravity="top"
                     android:layout_weight="1"
                     android:choiceMode="singleChoice"
-                    android:longClickable="true" />
+                    android:clipToPadding="false"
+                    android:divider="@android:color/transparent"
+                    android:dividerHeight="6dp"
+                    android:longClickable="true"
+                    android:paddingHorizontal="14dp"
+                    android:paddingBottom="8dp" />
 
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/oneui_divider" />
+
+                <!-- Bottom Action Dock -->
                 <LinearLayout
-                    style="?android:attr/buttonBarStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:padding="12dp">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/toggle_keyboard_button"
-                        style="?android:attr/buttonBarButtonStyle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
+                        style="@style/OneUI.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="6dp"
                         android:layout_weight="1"
-                        android:text="@string/action_toggle_soft_keyboard" />
+                        android:text="@string/action_toggle_soft_keyboard"
+                        android:textSize="13sp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/new_session_button"
-                        style="?android:attr/buttonBarButtonStyle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
+                        style="@style/OneUI.PrimaryButton"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="6dp"
                         android:layout_weight="1"
-                        android:text="@string/action_new_session" />
+                        android:text="@string/action_new_session"
+                        android:textSize="13sp" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -151,11 +432,11 @@
 
         <androidx.viewpager.widget.ViewPager
             android:id="@+id/terminal_toolbar_view_pager"
-            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="37.5dp"
-            android:background="@color/black"
-            android:layout_alignParentBottom="true" />
+            android:layout_alignParentBottom="true"
+            android:background="@color/oneui_background"
+            android:visibility="gone" />
 
     </RelativeLayout>
 

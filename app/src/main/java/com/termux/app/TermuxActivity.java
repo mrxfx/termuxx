@@ -54,9 +54,15 @@ import com.termux.shared.termux.settings.properties.TermuxAppSharedProperties;
 import com.termux.shared.termux.theme.TermuxThemeUtils;
 import com.termux.shared.theme.NightMode;
 import com.termux.shared.view.ViewUtils;
+import com.termux.app.ai.AIManager;
 import com.termux.app.ai.TerminalCommandBridge;
+import com.termux.app.ai.firebase.AppCheckInit;
+import com.termux.app.ai.model.AIProviderType;
 import com.termux.app.ai.ui.AIAssistantActivity;
+import com.termux.app.activities.CommandHistoryActivity;
 import com.termux.app.autocomplete.AutocompleteController;
+import com.termux.app.studio.TerminalStudioActivity;
+import com.termux.app.ui.TermuxOneUIWorkspaceHelper;
 import com.termux.terminal.TerminalSession;
 import com.termux.terminal.TerminalSessionClient;
 import com.termux.view.TerminalView;
@@ -222,6 +228,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         setActivityTheme();
 
         super.onCreate(savedInstanceState);
+        AppCheckInit.configureAppCheck(this, getIntent());
 
         setContentView(R.layout.activity_termux);
 
@@ -332,6 +339,11 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         TermuxCrashUtils.notifyAppCrashFromCrashLogFile(this, LOG_TAG);
 
         consumePendingAiInsert();
+        updateSessionSwitcherHeader();
+        updateDrawerAiStatusLabel();
+
+        if (mAutocompleteController != null)
+            mAutocompleteController.onResume();
 
         mIsOnResumeAfterOnCreate = false;
     }
@@ -365,6 +377,11 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         Logger.logDebug(LOG_TAG, "onDestroy");
 
         if (mIsInvalidState) return;
+
+        if (mAutocompleteController != null) {
+            mAutocompleteController.destroy();
+            mAutocompleteController = null;
+        }
 
         if (mTermuxService != null) {
             // Do not leave service and session clients with references to activity.
@@ -579,10 +596,13 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
 
     private void setSettingsButtonView() {
-        ImageButton settingsButton = findViewById(R.id.settings_button);
-        settingsButton.setOnClickListener(v -> {
-            ActivityUtils.startActivity(this, new Intent(this, SettingsActivity.class));
-        });
+        View settingsButton = findViewById(R.id.settings_button);
+        if (settingsButton != null) {
+            settingsButton.setOnClickListener(v -> {
+                getDrawer().closeDrawers();
+                ActivityUtils.startActivity(this, new Intent(this, SettingsActivity.class));
+            });
+        }
     }
 
     private void setAutocompleteAndAiViews() {
@@ -604,6 +624,89 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
                 openAIAssistant(null, null);
             });
         }
+
+        View studioDrawerButton = findViewById(R.id.studio_drawer_button);
+        if (studioDrawerButton != null) {
+            studioDrawerButton.setOnClickListener(v -> {
+                getDrawer().closeDrawers();
+                ActivityUtils.startActivity(this, new Intent(this, TerminalStudioActivity.class));
+            });
+        }
+
+        View historyDrawerButton = findViewById(R.id.history_drawer_button);
+        if (historyDrawerButton != null) {
+            historyDrawerButton.setOnClickListener(v -> {
+                getDrawer().closeDrawers();
+                ActivityUtils.startActivity(this, new Intent(this, CommandHistoryActivity.class));
+            });
+        }
+
+        View drawerMenuButton = findViewById(R.id.drawer_menu_button);
+        if (drawerMenuButton != null) {
+            drawerMenuButton.setOnClickListener(v -> {
+                if (getDrawer().isDrawerOpen(Gravity.LEFT)) {
+                    getDrawer().closeDrawers();
+                } else {
+                    getDrawer().openDrawer(Gravity.LEFT);
+                }
+            });
+        }
+
+        View sessionSwitcherPill = findViewById(R.id.session_switcher_pill);
+        if (sessionSwitcherPill != null) {
+            sessionSwitcherPill.setOnClickListener(v -> TermuxOneUIWorkspaceHelper.showSessionSwitcherDialog(this));
+        }
+
+        View topNewSessionButton = findViewById(R.id.top_new_session_button);
+        if (topNewSessionButton != null) {
+            topNewSessionButton.setOnClickListener(v -> mTermuxTerminalSessionActivityClient.addNewSession(false, null));
+            topNewSessionButton.setOnLongClickListener(v -> {
+                TextInputDialogUtils.textInput(TermuxActivity.this, R.string.title_create_named_session, null,
+                    R.string.action_create_named_session_confirm, text -> mTermuxTerminalSessionActivityClient.addNewSession(false, text),
+                    R.string.action_new_session_failsafe, text -> mTermuxTerminalSessionActivityClient.addNewSession(true, text),
+                    -1, null, null);
+                return true;
+            });
+        }
+
+        View topMoreButton = findViewById(R.id.top_more_button);
+        if (topMoreButton != null) {
+            topMoreButton.setOnClickListener(v -> TermuxOneUIWorkspaceHelper.showTopOverflowMenu(this, v));
+        }
+
+        updateDrawerAiStatusLabel();
+        updateSessionSwitcherHeader();
+    }
+
+    public void updateSessionSwitcherHeader() {
+        android.widget.TextView label = findViewById(R.id.session_switcher_label);
+        View dot = findViewById(R.id.session_switcher_dot);
+        if (label == null) return;
+
+        TerminalSession current = getCurrentSession();
+        if (current == null || mTermuxService == null) {
+            label.setText(R.string.application_name);
+            if (dot != null) dot.setBackgroundResource(R.drawable.bg_status_dot_green);
+            return;
+        }
+        int index = mTermuxService.getIndexOfSession(current);
+        String prefix = index >= 0 ? "[" + (index + 1) + "] " : "";
+        String name = !android.text.TextUtils.isEmpty(current.mSessionName)
+            ? current.mSessionName
+            : (!android.text.TextUtils.isEmpty(current.getTitle()) ? current.getTitle() : "shell");
+        label.setText(prefix + name);
+        if (dot != null) {
+            dot.setBackgroundResource(current.isRunning() ? R.drawable.bg_status_dot_green : R.drawable.bg_status_dot_amber);
+        }
+    }
+
+    private void updateDrawerAiStatusLabel() {
+        android.widget.TextView statusView = findViewById(R.id.drawer_ai_status_label);
+        if (statusView == null) return;
+        AIManager aiManager = AIManager.getInstance(this);
+        AIProviderType provider = aiManager.getSettings().getActiveProvider();
+        String model = aiManager.getSettings().getModelForProvider(provider);
+        statusView.setText(provider.getDisplayName() + " · " + model);
     }
 
     public void openAIAssistant(@Nullable String selectedText, @Nullable String initialPrompt) {

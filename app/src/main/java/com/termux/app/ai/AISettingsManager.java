@@ -13,6 +13,7 @@ public class AISettingsManager {
     private static final String PREFS_NAME = "termux_ai_settings";
 
     public static final String KEY_ACTIVE_PROVIDER = "ai_active_provider";
+    public static final String KEY_BUILTIN_MODEL = "ai_builtin_model";
     public static final String KEY_GEMINI_MODEL = "ai_gemini_model";
     public static final String KEY_OPENROUTER_MODEL = "ai_openrouter_model";
     public static final String KEY_TEMPERATURE = "ai_temperature";
@@ -38,7 +39,7 @@ public class AISettingsManager {
 
     @NonNull
     public AIProviderType getActiveProvider() {
-        return AIProviderType.fromId(mPrefs.getString(KEY_ACTIVE_PROVIDER, AIProviderType.GEMINI.getId()));
+        return AIProviderType.fromId(mPrefs.getString(KEY_ACTIVE_PROVIDER, AIProviderType.BUILTIN.getId()));
     }
 
     public void setActiveProvider(@NonNull AIProviderType provider) {
@@ -47,6 +48,10 @@ public class AISettingsManager {
 
     @NonNull
     public String getModelForProvider(@NonNull AIProviderType provider) {
+        if (provider == AIProviderType.BUILTIN) {
+            String val = mPrefs.getString(KEY_BUILTIN_MODEL, AIProviderType.BUILTIN.getDefaultModelId());
+            return (val == null || val.trim().isEmpty()) ? AIProviderType.BUILTIN.getDefaultModelId() : val.trim();
+        }
         if (provider == AIProviderType.OPENROUTER) {
             String val = mPrefs.getString(KEY_OPENROUTER_MODEL, AIProviderType.OPENROUTER.getDefaultModelId());
             return (val == null || val.trim().isEmpty()) ? AIProviderType.OPENROUTER.getDefaultModelId() : val.trim();
@@ -58,7 +63,14 @@ public class AISettingsManager {
     public void setModelForProvider(@NonNull AIProviderType provider, @NonNull String modelId) {
         String trimmed = modelId.trim();
         if (trimmed.isEmpty()) trimmed = provider.getDefaultModelId();
-        String key = provider == AIProviderType.OPENROUTER ? KEY_OPENROUTER_MODEL : KEY_GEMINI_MODEL;
+        String key;
+        if (provider == AIProviderType.BUILTIN) {
+            key = KEY_BUILTIN_MODEL;
+        } else if (provider == AIProviderType.OPENROUTER) {
+            key = KEY_OPENROUTER_MODEL;
+        } else {
+            key = KEY_GEMINI_MODEL;
+        }
         mPrefs.edit().putString(key, trimmed).apply();
     }
 
