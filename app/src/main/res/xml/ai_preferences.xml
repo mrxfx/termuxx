@@ -1,0 +1,149 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        app:key="ai_cat_provider"
+        app:title="@string/ai_cat_provider">
+
+        <ListPreference
+            app:key="ai_active_provider"
+            app:title="@string/ai_active_provider_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreferenceCompat
+            app:key="ai_streaming_enabled"
+            app:title="@string/ai_streaming_title"
+            app:summary="@string/ai_streaming_summary" />
+
+        <SwitchPreferenceCompat
+            app:key="ai_explicit_fallback_enabled"
+            app:title="@string/ai_fallback_title"
+            app:summary="@string/ai_fallback_summary" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="ai_cat_gemini"
+        app:title="@string/ai_cat_gemini">
+
+        <Preference
+            app:key="ai_gemini_api_key"
+            app:title="@string/ai_gemini_key_title"
+            app:persistent="false" />
+
+        <ListPreference
+            app:key="ai_gemini_model"
+            app:title="@string/ai_gemini_model_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <Preference
+            app:key="ai_gemini_custom_model"
+            app:title="@string/ai_custom_model_title"
+            app:persistent="false" />
+
+        <Preference
+            app:key="ai_gemini_test_connection"
+            app:title="@string/ai_test_connection_title"
+            app:summary="@string/ai_test_connection_summary"
+            app:persistent="false" />
+
+        <Preference
+            app:key="ai_gemini_fetch_models"
+            app:title="@string/ai_fetch_models_title"
+            app:summary="@string/ai_fetch_models_summary"
+            app:persistent="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="ai_cat_openrouter"
+        app:title="@string/ai_cat_openrouter">
+
+        <Preference
+            app:key="ai_openrouter_api_key"
+            app:title="@string/ai_openrouter_key_title"
+            app:persistent="false" />
+
+        <ListPreference
+            app:key="ai_openrouter_model"
+            app:title="@string/ai_openrouter_model_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <Preference
+            app:key="ai_openrouter_custom_model"
+            app:title="@string/ai_custom_model_title"
+            app:persistent="false" />
+
+        <Preference
+            app:key="ai_openrouter_test_connection"
+            app:title="@string/ai_test_connection_title"
+            app:summary="@string/ai_test_connection_summary"
+            app:persistent="false" />
+
+        <Preference
+            app:key="ai_openrouter_fetch_models"
+            app:title="@string/ai_fetch_models_title"
+            app:summary="@string/ai_fetch_models_summary"
+            app:persistent="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="ai_cat_generation"
+        app:title="@string/ai_cat_generation">
+
+        <ListPreference
+            app:key="ai_temperature_preset"
+            app:title="@string/ai_temperature_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            app:key="ai_max_tokens_preset"
+            app:title="@string/ai_max_tokens_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <Preference
+            app:key="ai_custom_proxy_url"
+            app:title="@string/ai_custom_proxy_title"
+            app:persistent="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="ai_cat_privacy"
+        app:title="@string/ai_cat_privacy">
+
+        <SwitchPreferenceCompat
+            app:key="ai_ctx_include_cwd"
+            app:title="@string/ai_ctx_cwd_title" />
+
+        <SwitchPreferenceCompat
+            app:key="ai_ctx_include_shell"
+            app:title="@string/ai_ctx_shell_title" />
+
+        <SwitchPreferenceCompat
+            app:key="ai_ctx_include_last_command"
+            app:title="@string/ai_ctx_last_cmd_title" />
+
+        <SwitchPreferenceCompat
+            app:key="ai_ctx_include_recent_output"
+            app:title="@string/ai_ctx_recent_output_title"
+            app:summary="@string/ai_ctx_recent_output_summary" />
+
+        <SwitchPreferenceCompat
+            app:key="ai_ctx_include_tools"
+            app:title="@string/ai_ctx_tools_title" />
+
+        <Preference
+            app:key="ai_clear_history"
+            app:title="@string/ai_clear_history_title"
+            app:persistent="false" />
+
+        <Preference
+            app:key="ai_security_notice"
+            app:title="@string/ai_security_notice_title"
+            app:summary="@string/ai_security_notice_summary"
+            app:persistent="false" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

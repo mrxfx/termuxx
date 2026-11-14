@@ -1,0 +1,64 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        app:key="ac_cat_general"
+        app:title="@string/ac_cat_general">
+
+        <SwitchPreferenceCompat
+            app:key="ac_enabled"
+            app:title="@string/ac_enabled_title"
+            app:summary="@string/ac_enabled_summary" />
+
+        <SwitchPreferenceCompat
+            app:key="ac_ghost_text_enabled"
+            app:title="@string/ac_ghost_title"
+            app:summary="@string/ac_ghost_summary" />
+
+        <SwitchPreferenceCompat
+            app:key="ac_dropdown_enabled"
+            app:title="@string/ac_dropdown_title"
+            app:summary="@string/ac_dropdown_summary" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="ac_cat_sources"
+        app:title="@string/ac_cat_sources">
+
+        <SwitchPreferenceCompat
+            app:key="ac_history_enabled"
+            app:title="@string/ac_history_title" />
+
+        <SwitchPreferenceCompat
+            app:key="ac_files_enabled"
+            app:title="@string/ac_files_title" />
+
+        <SwitchPreferenceCompat
+            app:key="ac_packages_enabled"
+            app:title="@string/ac_packages_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="ac_cat_behavior"
+        app:title="@string/ac_cat_behavior">
+
+        <ListPreference
+            app:key="ac_max_suggestions"
+            app:title="@string/ac_max_suggestions_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            app:key="ac_accept_key"
+            app:title="@string/ac_accept_key_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <Preference
+            app:key="ac_clear_history"
+            app:title="@string/ac_clear_history_title"
+            app:summary="@string/ac_clear_history_summary"
+            app:persistent="false" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

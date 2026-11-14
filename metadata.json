@@ -1,0 +1,6 @@
+{
+  "name": "Termux AI",
+  "description": "Termux AI: Terminal emulator and Linux environment with offline smart autocomplete and Gemini + OpenRouter AI assistant",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
